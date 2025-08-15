@@ -16,7 +16,11 @@ interface AuthModalProps {
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [signinData, setSigninData] = useState({
+    email: "",
+    password: "",
+  });
+  const [signupData, setSignupData] = useState({
     email: "",
     password: "",
     confirmPassword: "",
@@ -24,19 +28,38 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
+  const handleSigninInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSigninData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
   };
+
+  const handleSignupInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSignupData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  const clearFormData = () => {
+    setSigninData({ email: "", password: "" });
+    setSignupData({ email: "", password: "", confirmPassword: "" });
+  };
+
+  // Clear form data when modal closes
+  React.useEffect(() => {
+    if (!isOpen) {
+      clearFormData();
+    }
+  }, [isOpen]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const result = await signIn(formData.email, formData.password);
+      const result = await signIn(signinData.email, signinData.password);
       
       if (result.success) {
         toast({
@@ -65,7 +88,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
+    if (signupData.password !== signupData.confirmPassword) {
       toast({
         title: "Password mismatch",
         description: "Please ensure your passwords match.",
@@ -74,7 +97,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
       return;
     }
 
-    if (formData.password.length < 6) {
+    if (signupData.password.length < 6) {
       toast({
         title: "Password too short",
         description: "Password must be at least 6 characters long.",
@@ -86,7 +109,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setIsLoading(true);
 
     try {
-      const result = await signUp(formData.email, formData.password);
+      const result = await signUp(signupData.email, signupData.password);
       
       if (result.success) {
         toast({
@@ -141,8 +164,8 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       name="email"
                       type="email"
                       placeholder="Enter your email"
-                      value={formData.email}
-                      onChange={handleInputChange}
+                      value={signinData.email}
+                      onChange={handleSigninInputChange}
                       className="pl-10 bg-white/50 border-golden-300 focus:border-golden-500"
                       required
                     />
@@ -158,8 +181,8 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
-                      value={formData.password}
-                      onChange={handleInputChange}
+                      value={signinData.password}
+                      onChange={handleSigninInputChange}
                       className="pl-10 pr-10 bg-white/50 border-golden-300 focus:border-golden-500"
                       required
                     />
@@ -201,8 +224,8 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       name="email"
                       type="email"
                       placeholder="Enter your email"
-                      value={formData.email}
-                      onChange={handleInputChange}
+                      value={signupData.email}
+                      onChange={handleSignupInputChange}
                       className="pl-10 bg-white/50 border-golden-300 focus:border-golden-500"
                       required
                     />
@@ -218,8 +241,8 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Create a password"
-                      value={formData.password}
-                      onChange={handleInputChange}
+                      value={signupData.password}
+                      onChange={handleSignupInputChange}
                       className="pl-10 pr-10 bg-white/50 border-golden-300 focus:border-golden-500"
                       required
                       minLength={6}
@@ -243,8 +266,8 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       name="confirmPassword"
                       type={showPassword ? "text" : "password"}
                       placeholder="Confirm your password"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
+                      value={signupData.confirmPassword}
+                      onChange={handleSignupInputChange}
                       className="pl-10 bg-white/50 border-golden-300 focus:border-golden-500"
                       required
                     />

@@ -43,6 +43,11 @@ export default function Index() {
     }
   }, [debugMode]);
 
+  // Debug: Monitor textContent state changes
+  React.useEffect(() => {
+    console.log('textContent state changed to:', textContent?.length || 0, 'characters');
+  }, [textContent]);
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     // Check authentication first
     if (!user) {
@@ -118,7 +123,9 @@ export default function Index() {
         const fallbackResult = await extractTextFallback(file);
         
         if (fallbackResult.success) {
+          console.log('Setting textContent from fallback (first):', fallbackResult.text.length, 'characters');
           setTextContent(fallbackResult.text);
+          console.log('textContent state should now be set to:', fallbackResult.text.length, 'characters');
           toast({
             title: "PDF processed (fallback method)",
             description: `Extracted ${fallbackResult.text.length} characters using fallback method.`,
@@ -196,6 +203,9 @@ export default function Index() {
       return;
     }
 
+    console.log('generateQuiz called with textContent length:', textContent?.length || 0);
+    console.log('textContent preview:', textContent?.substring(0, 100));
+
     if (!textContent.trim()) {
       toast({
         title: "No content",
@@ -258,7 +268,6 @@ export default function Index() {
                 <h2 className="text-2xl font-bold text-golden-800 mb-2">Welcome to QuizCraft AI</h2>
                 <p className="text-golden-600">Please sign in to start creating amazing quizzes</p>
               </div>
-              <AuthModal isOpen={true} onClose={() => {}} />
             </div>
           </div>
         </div>
@@ -406,6 +415,13 @@ export default function Index() {
                     </>
                   )}
                 </Button>
+                {debugMode && (
+                  <div className="text-xs text-orange-600 mt-2">
+                    Button state: {isGenerating ? 'Generating' : 'Ready'} | 
+                    Text content: {textContent?.length || 0} chars | 
+                    Disabled: {isGenerating || !textContent.trim() ? 'Yes' : 'No'}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
