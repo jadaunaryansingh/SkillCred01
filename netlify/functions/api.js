@@ -103,6 +103,7 @@ app.post("/api/generate-quiz", async (req, res) => {
       questions: [
         {
           id: 1,
+          type: "multiple-choice",
           question: "Sample question based on: " + textContent.substring(0, 50) + "...",
           options: [
             "Option A",
@@ -110,7 +111,7 @@ app.post("/api/generate-quiz", async (req, res) => {
             "Option C",
             "Option D"
           ],
-          correctAnswer: 0,
+          correctAnswer: "Option A",
           explanation: "This is a sample question generated from your text content."
         }
       ]

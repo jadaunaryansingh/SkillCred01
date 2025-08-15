@@ -15,6 +15,16 @@ interface QuizViewerProps {
 }
 
 export default function QuizViewer({ questions }: QuizViewerProps) {
+  // Add null check to prevent crashes
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-golden-600">No quiz questions available yet.</p>
+        <p className="text-sm text-golden-500 mt-2">Generate a quiz to get started!</p>
+      </div>
+    );
+  }
+
   const [showAnswers, setShowAnswers] = useState(false);
   const [expandedExplanation, setExpandedExplanation] = useState<number | null>(null);
   const [quizMode, setQuizMode] = useState<'review' | 'interactive'>('review');
@@ -42,6 +52,12 @@ export default function QuizViewer({ questions }: QuizViewerProps) {
     yPosition += 20;
 
     questions.forEach((question, index) => {
+      // Add safety check for question properties
+      if (!question || !question.question || !question.options) {
+        console.warn('Skipping invalid question in PDF export:', question);
+        return;
+      }
+
       // Check if we need a new page
       if (yPosition > 250) {
         pdf.addPage();
@@ -61,6 +77,7 @@ export default function QuizViewer({ questions }: QuizViewerProps) {
       // Options
       pdf.setFont("helvetica", "normal");
       question.options.forEach((option) => {
+        if (!option) return; // Skip undefined options
         const optionLines = pdf.splitTextToSize(`   ${option}`, 165);
         optionLines.forEach((line: string) => {
           pdf.text(line, 25, yPosition);
@@ -94,6 +111,12 @@ export default function QuizViewer({ questions }: QuizViewerProps) {
     yPosition += 20;
 
     questions.forEach((question, index) => {
+      // Add safety check for question properties
+      if (!question || !question.question || !question.correctAnswer) {
+        console.warn('Skipping invalid question in answer key PDF export:', question);
+        return;
+      }
+
       // Check if we need a new page
       if (yPosition > 220) {
         pdf.addPage();
@@ -278,87 +301,96 @@ export default function QuizViewer({ questions }: QuizViewerProps) {
 
       {/* Questions */}
       <div className="space-y-4 animate-stagger">
-        {questions.map((question, index) => (
-          <Card key={question.id} className="bg-white/60 border-golden-200 hover:shadow-lg transition-all duration-200 card-hover">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-start gap-3 text-lg">
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="flex items-center justify-center w-6 h-6 bg-golden-500 text-white text-sm font-bold rounded-full">
-                    {index + 1}
-                  </span>
-                  <Badge 
-                    variant="secondary"
-                    className="bg-golden-100 text-golden-700 border-golden-300"
-                  >
-                    {getQuestionIcon(question.type)}
-                    <span className="ml-1 capitalize">
-                      {question.type.replace("-", " ")}
+        {questions.map((question, index) => {
+          // Add safety check for individual question properties
+          if (!question || !question.options || !question.type) {
+            console.warn('Invalid question data:', question);
+            return null;
+          }
+          
+          return (
+            <Card key={question.id || index} className="bg-white/60 border-golden-200 hover:shadow-lg transition-all duration-200 card-hover">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-start gap-3 text-lg">
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="flex items-center justify-center w-6 h-6 bg-golden-500 text-white text-sm font-bold rounded-full">
+                      {index + 1}
                     </span>
-                  </Badge>
-                </div>
-                <span className="text-golden-800 leading-relaxed">
-                  {question.question}
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Options */}
-              <div className="space-y-2">
-                {question.options.map((option, optionIndex) => {
-                  const isCorrect = showAnswers && option.includes(question.correctAnswer);
-                  return (
-                    <div
-                      key={optionIndex}
-                      className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                        showAnswers
-                          ? isCorrect
-                            ? "bg-green-50 border-green-300 text-green-800"
-                            : "bg-gray-50 border-gray-200 text-gray-600"
-                          : "bg-white border-golden-200 hover:border-golden-300"
-                      }`}
+                    <Badge 
+                      variant="secondary"
+                      className="bg-golden-100 text-golden-700 border-golden-300"
                     >
-                      {showAnswers && getAnswerIcon(isCorrect)}
-                      <span className="flex-1">{option}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Answer and Explanation */}
-              {showAnswers && (
-                <div className="border-t border-golden-200 pt-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    <span className="font-medium text-green-700">
-                      Correct Answer: {question.correctAnswer}
-                    </span>
+                      {getQuestionIcon(question.type)}
+                      <span className="ml-1 capitalize">
+                        {question.type?.replace("-", " ") || "Question"}
+                      </span>
+                    </Badge>
                   </div>
-                  
-                  {question.explanation && (
-                    <div>
-                      <Button
-                        onClick={() => toggleExplanation(question.id)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-golden-700 hover:text-golden-800 hover:bg-golden-50 p-0 h-auto font-medium"
+                  <span className="text-golden-800 leading-relaxed">
+                    {question.question || "Question text not available"}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Options */}
+                <div className="space-y-2">
+                  {question.options?.map((option, optionIndex) => {
+                    if (!option) return null;
+                    const isCorrect = showAnswers && option === question.correctAnswer;
+                    return (
+                      <div
+                        key={optionIndex}
+                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                          showAnswers
+                            ? isCorrect
+                              ? "bg-green-50 border-green-300 text-green-800"
+                              : "bg-gray-50 border-gray-200 text-gray-600"
+                            : "bg-white border-golden-200 hover:border-golden-300"
+                        }`}
                       >
-                        {expandedExplanation === question.id ? "Hide" : "Show"} Explanation
-                      </Button>
-                      
-                      {expandedExplanation === question.id && (
-                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-blue-800 text-sm leading-relaxed">
-                            {question.explanation}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        {showAnswers && getAnswerIcon(isCorrect)}
+                        <span className="flex-1">{option}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+
+                {/* Answer and Explanation */}
+                {showAnswers && (
+                  <div className="border-t border-golden-200 pt-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="font-medium text-green-700">
+                        Correct Answer: {question.correctAnswer}
+                      </span>
+                    </div>
+                    
+                    {question.explanation && (
+                      <div>
+                        <Button
+                          onClick={() => toggleExplanation(question.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-golden-700 hover:text-golden-800 hover:bg-golden-50 p-0 h-auto font-medium"
+                        >
+                          {expandedExplanation === question.id ? "Hide" : "Show"} Explanation
+                        </Button>
+                        
+                        {expandedExplanation === question.id && (
+                          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-blue-800 text-sm leading-relaxed">
+                              {question.explanation}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

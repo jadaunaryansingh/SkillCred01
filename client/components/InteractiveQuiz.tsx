@@ -19,6 +19,18 @@ interface UserAnswer {
 }
 
 export default function InteractiveQuiz({ questions, onBackToReview }: InteractiveQuizProps) {
+  // Add null check to prevent crashes
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-golden-600">No quiz questions available.</p>
+        <Button onClick={onBackToReview} variant="outline" className="mt-4">
+          Back to Review
+        </Button>
+      </div>
+    );
+  }
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
@@ -29,6 +41,18 @@ export default function InteractiveQuiz({ questions, onBackToReview }: Interacti
   const currentQuestion = questions[currentQuestionIndex];
   const totalQuestions = questions.length;
   const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+
+  // Add safety check for currentQuestion
+  if (!currentQuestion) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-golden-600">Invalid question data.</p>
+        <Button onClick={onBackToReview} variant="outline" className="mt-4">
+          Back to Review
+        </Button>
+      </div>
+    );
+  }
 
   const handleAnswerSelect = (answer: string) => {
     setSelectedAnswer(answer);
@@ -63,6 +87,9 @@ export default function InteractiveQuiz({ questions, onBackToReview }: Interacti
   };
 
   const checkAnswer = (selected: string, correct: string): boolean => {
+    // Add safety checks
+    if (!selected || !correct) return false;
+    
     // For multiple choice, check if the selected option contains the correct answer
     if (selected.includes(correct)) return true;
     
@@ -85,9 +112,14 @@ export default function InteractiveQuiz({ questions, onBackToReview }: Interacti
     return userAnswers
       .filter(answer => !answer.isCorrect)
       .map(answer => {
-        const question = questions.find(q => q.id === answer.questionId);
+        const question = questions.find(q => q && q.id === answer.questionId);
+        if (!question) {
+          console.warn('Question not found for answer:', answer);
+          return null;
+        }
         return { ...answer, question };
-      });
+      })
+      .filter(Boolean); // Remove null entries
   };
 
   const exportQuizPDF = () => {
