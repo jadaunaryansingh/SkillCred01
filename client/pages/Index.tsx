@@ -236,13 +236,12 @@ export default function Index() {
     setIsGenerating(true);
     try {
       const requestBody = { textContent: cleanedTextContent, questionCount };
-      console.log('Sending request to API:', {
-        url: '/api/generate-quiz',
-        method: 'POST',
-        bodySize: JSON.stringify(requestBody).length,
-        textContentLength: cleanedTextContent.length,
-        questionCount
-      });
+      console.log('=== REQUEST DEBUG ===');
+      console.log('textContent state:', textContent);
+      console.log('cleanedTextContent:', cleanedTextContent);
+      console.log('requestBody:', requestBody);
+      console.log('JSON stringified:', JSON.stringify(requestBody));
+      console.log('Body length:', JSON.stringify(requestBody).length);
       
       const response = await fetch("/api/generate-quiz", {
         method: "POST",
@@ -449,6 +448,25 @@ export default function Index() {
                     Disabled: {isGenerating || !textContent.trim() ? 'Yes' : 'No'}
                   </div>
                 )}
+                
+                {/* Test Button */}
+                <div className="mt-2">
+                  <Button
+                    onClick={() => {
+                      console.log('=== TEST DEBUG ===');
+                      console.log('Current textContent:', textContent);
+                      console.log('textContent length:', textContent?.length || 0);
+                      console.log('textContent type:', typeof textContent);
+                      console.log('textContent is empty:', !textContent);
+                      console.log('textContent trim length:', textContent?.trim().length || 0);
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                  >
+                    Debug Text State
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
