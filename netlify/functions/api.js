@@ -34,6 +34,15 @@ app.get("/api/ping", (_req, res) => {
 // Quiz generation endpoint - COMPLETELY REWRITTEN
 app.post("/api/generate-quiz", async (req, res) => {
   console.log('🚀 NEW FUNCTION V3.0 - QUIZ GENERATION START ===');
+  
+  // DEBUG PATCH: Log raw request before any processing
+  console.log('🔍 RAW REQUEST DEBUG:');
+  console.log('  - Raw req.body:', req.body);
+  console.log('  - Raw req.body type:', typeof req.body);
+  console.log('  - Raw req.body keys:', Object.keys(req.body || {}));
+  console.log('  - Raw req.body stringified:', JSON.stringify(req.body));
+  console.log('  - Raw req.body length:', JSON.stringify(req.body).length);
+  
   console.log('Request headers:', JSON.stringify(req.headers, null, 2));
   console.log('Request body:', JSON.stringify(req.body, null, 2));
   console.log('Request body type:', typeof req.body);
@@ -44,6 +53,13 @@ app.post("/api/generate-quiz", async (req, res) => {
   const requestData = req.body || {};
   const textContent = requestData.textContent;
   const questionCount = requestData.questionCount || 20;
+  
+  // DEBUG PATCH: Check for different field names
+  console.log('🔍 FIELD NAME DEBUG:');
+  console.log('  - textContent field:', textContent);
+  console.log('  - text field:', requestData.text);
+  console.log('  - content field:', requestData.content);
+  console.log('  - All available fields:', Object.keys(requestData));
   
   console.log('Extracted textContent:', textContent);
   console.log('textContent type:', typeof textContent);
