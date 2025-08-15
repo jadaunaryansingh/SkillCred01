@@ -215,6 +215,24 @@ export default function Index() {
       return;
     }
 
+    // Clean the text content before sending to API
+    const cleanedTextContent = textContent
+      .replace(/[^\x20-\x7E\n\r\t]/g, '') // Remove non-printable characters
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+
+    console.log('Cleaned text content length:', cleanedTextContent.length);
+    console.log('Cleaned text preview:', cleanedTextContent.substring(0, 100));
+
+    if (!cleanedTextContent.trim()) {
+      toast({
+        title: "Invalid content",
+        description: "The extracted text contains no readable content. Please try a different PDF or paste text manually.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const response = await fetch("/api/generate-quiz", {
@@ -222,7 +240,7 @@ export default function Index() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ textContent, questionCount }),
+        body: JSON.stringify({ textContent: cleanedTextContent, questionCount }),
       });
 
       if (!response.ok) {

@@ -319,8 +319,18 @@ export async function extractTextFallback(file: File): Promise<{ text: string; s
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
     
+    // Filter out common PDF metadata and binary artifacts
+    const filteredText = readableText
+      .replace(/\d{10,}_[A-Z\s]+/g, '') // Remove long numbers with names
+      .replace(/Mozilla\/\d+\.\d+.*?Skia\/PDF.*?/g, '') // Remove browser/PDF metadata
+      .replace(/[A-Z]{2,}\/[A-Z0-9\s]+/g, '') // Remove PDF operators
+      .replace(/\d{1,2}\/\d{1,2}\/\d{4}/g, '') // Remove dates
+      .replace(/[^\w\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/g, '') // Keep only meaningful punctuation
+      .replace(/\s+/g, ' ') // Normalize whitespace again
+      .trim();
+    
     // Combine both approaches
-    const finalText = (extractedText + ' ' + readableText).trim();
+    const finalText = (extractedText + ' ' + filteredText).trim();
     
     console.log('Fallback extraction completed. Text length:', finalText.length);
     

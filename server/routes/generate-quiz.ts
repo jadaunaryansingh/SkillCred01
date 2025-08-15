@@ -5,9 +5,37 @@ export const handleGenerateQuiz: RequestHandler = async (req, res) => {
   // Extract textContent at the top level so it's available in catch block
   const { textContent, questionCount = 20 } = req.body as QuizGenerationRequest;
   
+  console.log('Received quiz generation request:', {
+    textContentLength: textContent?.length || 0,
+    questionCount,
+    hasTextContent: !!textContent,
+    textContentType: typeof textContent
+  });
+  
   if (!textContent) {
     return res.status(400).json({ error: "Text content is required" });
   }
+
+  // Additional validation for text content
+  if (typeof textContent !== 'string') {
+    return res.status(400).json({ error: "Text content must be a string" });
+  }
+
+  if (textContent.trim().length < 100) {
+    return res.status(400).json({ error: "Text content must be at least 100 characters long" });
+  }
+
+  // Clean the text content on the server side as well
+  const cleanedTextContent = textContent
+    .replace(/[^\x20-\x7E\n\r\t]/g, '') // Remove non-printable characters
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+
+  if (cleanedTextContent.length < 100) {
+    return res.status(400).json({ error: "After cleaning, text content is too short. Please provide more substantial content." });
+  }
+
+  console.log('Cleaned text content length:', cleanedTextContent.length);
 
   try {
 
@@ -17,7 +45,7 @@ export const handleGenerateQuiz: RequestHandler = async (req, res) => {
     const prompt = `Based on the following educational content, generate exactly ${questionCount} multiple-choice questions and true/false questions. Make sure each generation is unique and different from previous ones.
 
 Content to analyze:
-${textContent}
+${cleanedTextContent}
 
 Please format your response as a JSON object with this exact structure:
 {
@@ -111,7 +139,7 @@ Generate a mix of both multiple-choice and true/false questions. Make sure to va
       console.error("Raw response:", generatedText);
 
       // Generate a better fallback quiz based on the content
-      const fallbackQuestions = generateFallbackQuiz(textContent, questionCount);
+      const fallbackQuestions = generateFallbackQuiz(cleanedTextContent, questionCount);
       quizData = { questions: fallbackQuestions };
       console.log('Using fallback quiz generation');
     }
@@ -127,7 +155,7 @@ Generate a mix of both multiple-choice and true/false questions. Make sure to va
     console.error("Error generating quiz:", error);
 
     // Provide a fallback response even when the API fails
-    const fallbackQuestions = generateFallbackQuiz(textContent, questionCount);
+    const fallbackQuestions = generateFallbackQuiz(cleanedTextContent, questionCount);
 
     res.json({
       success: true,
