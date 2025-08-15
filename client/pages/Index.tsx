@@ -45,7 +45,12 @@ export default function Index() {
 
   // Debug: Monitor textContent state changes
   React.useEffect(() => {
-    console.log('textContent state changed to:', textContent?.length || 0, 'characters');
+    console.log('🔍 textContent state changed to:', textContent?.length || 0, 'characters');
+    if (textContent) {
+      console.log('🔍 textContent preview:', textContent.substring(0, 100));
+      // Store in localStorage to debug state persistence
+      localStorage.setItem('debug_textContent', textContent);
+    }
   }, [textContent]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,10 +208,21 @@ export default function Index() {
       return;
     }
 
-    console.log('generateQuiz called with textContent length:', textContent?.length || 0);
-    console.log('textContent preview:', textContent?.substring(0, 100));
+    // Try to restore textContent from localStorage if it's empty
+    let currentTextContent = textContent;
+    if (!currentTextContent || currentTextContent.trim().length === 0) {
+      const storedText = localStorage.getItem('debug_textContent');
+      if (storedText && storedText.trim().length > 0) {
+        console.log('🔧 Restoring textContent from localStorage:', storedText.length, 'characters');
+        currentTextContent = storedText;
+        setTextContent(storedText); // Update state
+      }
+    }
 
-    if (!textContent.trim()) {
+    console.log('generateQuiz called with textContent length:', currentTextContent?.length || 0);
+    console.log('textContent preview:', currentTextContent?.substring(0, 100));
+
+    if (!currentTextContent.trim()) {
       toast({
         title: "No content",
         description: "Please upload a PDF or enter text content first.",
@@ -216,7 +232,7 @@ export default function Index() {
     }
 
             // Clean the text content before sending to API
-        const cleanedTextContent = textContent
+        const cleanedTextContent = currentTextContent
           .replace(/[^\x20-\x7E\n\r\t]/g, '') // Remove non-printable characters
           .replace(/\s+/g, ' ') // Normalize whitespace
           .replace(/[^\w\s.,!?;:()[\]{}"'\-]/g, '') // Remove special characters except basic punctuation
@@ -486,12 +502,44 @@ export default function Index() {
                       console.log('textContent type:', typeof textContent);
                       console.log('textContent is empty:', !textContent);
                       console.log('textContent trim length:', textContent?.trim().length || 0);
+                      
+                      // Check localStorage for stored text
+                      const storedText = localStorage.getItem('debug_textContent');
+                      console.log('Stored textContent from localStorage:', storedText);
+                      console.log('Stored text length:', storedText?.length || 0);
                     }}
                     variant="outline"
                     size="sm"
                     className="text-xs"
                   >
                     Debug Text State
+                  </Button>
+                  
+                  {/* Restore Button */}
+                  <Button
+                    onClick={() => {
+                      const storedText = localStorage.getItem('debug_textContent');
+                      if (storedText && storedText.trim().length > 0) {
+                        console.log('🔧 Manually restoring textContent from localStorage:', storedText.length, 'characters');
+                        setTextContent(storedText);
+                        toast({
+                          title: "Text Restored",
+                          description: `Restored ${storedText.length} characters from localStorage`,
+                        });
+                      } else {
+                        console.log('❌ No stored text found in localStorage');
+                        toast({
+                          title: "No Stored Text",
+                          description: "No text content found in localStorage",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs ml-2"
+                  >
+                    Restore Text
                   </Button>
                 </div>
               </div>
