@@ -91,8 +91,20 @@ export async function extractTextFromPDF(file: File): Promise<ExtractedPDFConten
             .join(' ');
           
           if (pageText.trim()) {
-            fullText += `${pageText}\n\n`;
-            console.log(`Page ${pageNum} extracted, text length:`, pageText.length);
+            // Clean up the extracted text to remove binary artifacts
+            const cleanedPageText = pageText
+              .replace(/[^\x20-\x7E\n\r\t]/g, '') // Remove non-printable characters
+              .replace(/\s+/g, ' ') // Normalize whitespace
+              .replace(/[^\w\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/g, '') // Keep meaningful punctuation
+              .replace(/\s+/g, ' ') // Normalize whitespace again
+              .trim();
+            
+            if (cleanedPageText.length > 10) {
+              fullText += `${cleanedPageText}\n\n`;
+              console.log(`Page ${pageNum} extracted, text length:`, cleanedPageText.length);
+            } else {
+              console.log(`Page ${pageNum} has insufficient text content after cleaning`);
+            }
           } else {
             console.log(`Page ${pageNum} has no text content`);
           }
@@ -267,6 +279,18 @@ export function validatePDFStructure(file: File): Promise<{ valid: boolean; erro
   });
 }
 
+// Function to detect if PDF contains mostly binary data
+export function detectBinaryContent(text: string): { isBinary: boolean; readablePercentage: number } {
+  const totalChars = text.length;
+  const readableChars = text.split('').filter(char => /[A-Za-z0-9\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/.test(char)).length;
+  const readablePercentage = (readableChars / totalChars) * 100;
+  
+  return {
+    isBinary: readablePercentage < 30, // If less than 30% is readable, consider it binary
+    readablePercentage
+  };
+}
+
 // Simple text extraction fallback (very basic, for emergency use)
 export async function extractTextFallback(file: File): Promise<{ text: string; success: boolean; error?: string }> {
   try {
@@ -281,65 +305,105 @@ export async function extractTextFallback(file: File): Promise<{ text: string; s
     
     console.log('Raw text length:', text.length);
     
-    // Look for common text patterns in PDFs - more comprehensive approach
-    const textPatterns = [
-      // Text in parentheses (common PDF text format)
-      /\([^)]{3,}\)/g,
-      // Text between BT and ET (PDF text operators)
-      /BT\s*([^E]*?)ET/g,
-      // Text after Tj operator
-      /Tj\s*\(([^)]+)\)/g,
-      // Text after TJ operator
-      /TJ\s*\[([^\]]+)\]/g,
-      // Plain text patterns
-      /[A-Za-z]{3,}/g
-    ];
+    // Check if the content is mostly binary
+    const binaryCheck = detectBinaryContent(text);
+    console.log('Binary content detection:', binaryCheck);
     
+    if (binaryCheck.isBinary) {
+      console.log('PDF appears to contain mostly binary data, trying specialized extraction...');
+    }
+    
+    // Better approach: Look for actual readable text content
+    // PDFs often store text in specific patterns we can extract
+    
+    // Method 1: Extract text between parentheses (common PDF text format)
+    const parenthesesText = text.match(/\(([^)]{5,})\)/g) || [];
     let extractedText = '';
     
-    for (const pattern of textPatterns) {
-      const matches = text.match(pattern) || [];
-      for (const match of matches) {
-        // Clean up the text
-        let cleanText = match
-          .replace(/[\(\)\[\]]/g, '') // Remove brackets
-          .replace(/BT|ET|Tj|TJ/g, '') // Remove PDF operators
-          .replace(/\s+/g, ' ') // Normalize whitespace
-          .trim();
-        
-        if (cleanText.length > 10 && /[A-Za-z]/.test(cleanText)) {
-          extractedText += cleanText + ' ';
-        }
+    for (const match of parenthesesText) {
+      const cleanText = match
+        .replace(/[\(\)]/g, '') // Remove parentheses
+        .replace(/[^\x20-\x7E]/g, '') // Keep only printable ASCII
+        .trim();
+      
+      if (cleanText.length > 10 && /[A-Za-z]/.test(cleanText)) {
+        extractedText += cleanText + ' ';
       }
     }
     
-    // Also try to extract readable text directly
-    const readableText = text
-      .replace(/[^\x20-\x7E\n\r\t]/g, '') // Keep only printable ASCII
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .trim();
+    // Method 2: Extract text after Tj operator (PDF text operator)
+    const tjMatches = text.match(/Tj\s*\(([^)]+)\)/g) || [];
+    for (const match of tjMatches) {
+      const cleanText = match
+        .replace(/Tj\s*\(/, '') // Remove Tj operator
+        .replace(/\)$/, '') // Remove closing parenthesis
+        .replace(/[^\x20-\x7E]/g, '') // Keep only printable ASCII
+        .trim();
+      
+      if (cleanText.length > 5 && /[A-Za-z]/.test(cleanText)) {
+        extractedText += cleanText + ' ';
+      }
+    }
     
-    // Filter out common PDF metadata and binary artifacts
-    const filteredText = readableText
-      .replace(/\d{10,}_[A-Z\s]+/g, '') // Remove long numbers with names
-      .replace(/Mozilla\/\d+\.\d+.*?Skia\/PDF.*?/g, '') // Remove browser/PDF metadata
-      .replace(/[A-Z]{2,}\/[A-Z0-9\s]+/g, '') // Remove PDF operators
-      .replace(/\d{1,2}\/\d{1,2}\/\d{4}/g, '') // Remove dates
-      .replace(/[^\w\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/g, '') // Keep only meaningful punctuation
+    // Method 3: Extract text after TJ operator (PDF text array operator)
+    const tjArrayMatches = text.match(/TJ\s*\[([^\]]+)\]/g) || [];
+    for (const match of tjArrayMatches) {
+      const cleanText = match
+        .replace(/TJ\s*\[/, '') // Remove TJ operator
+        .replace(/\]$/, '') // Remove closing bracket
+        .replace(/[^\x20-\x7E]/g, '') // Keep only printable ASCII
+        .trim();
+      
+      if (cleanText.length > 5 && /[A-Za-z]/.test(cleanText)) {
+        extractedText += cleanText + ' ';
+      }
+    }
+    
+    // Method 4: Look for plain text patterns (words with reasonable length)
+    const wordPattern = /[A-Za-z]{3,20}/g;
+    const words = text.match(wordPattern) || [];
+    const uniqueWords = [...new Set(words)].slice(0, 100); // Limit to first 100 unique words
+    
+    if (uniqueWords.length > 10) {
+      extractedText += uniqueWords.join(' ') + ' ';
+    }
+    
+    // Clean up the extracted text
+    const cleanedText = extractedText
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .replace(/[^\w\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/g, '') // Keep meaningful punctuation
       .replace(/\s+/g, ' ') // Normalize whitespace again
       .trim();
     
-    // Combine both approaches
-    const finalText = (extractedText + ' ' + filteredText).trim();
+    console.log('Fallback extraction completed. Text length:', cleanedText.length);
+    console.log('Extracted text preview:', cleanedText.substring(0, 200));
     
-    console.log('Fallback extraction completed. Text length:', finalText.length);
-    
-    if (finalText.length > 100) {
+    if (cleanedText.length > 100) {
       return {
-        text: finalText,
+        text: cleanedText,
         success: true
       };
     } else {
+      // If we still don't have enough text, try a different approach
+      console.log('Trying alternative text extraction...');
+      
+      // Look for any readable text in the file
+      const readableChars = text
+        .split('')
+        .filter(char => /[A-Za-z0-9\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/.test(char))
+        .join('');
+      
+      const finalText = readableChars
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (finalText.length > 100) {
+        return {
+          text: finalText,
+          success: true
+        };
+      }
+      
       return {
         text: '',
         success: false,

@@ -138,9 +138,18 @@ export default function Index() {
         } else {
           toast({
             title: "PDF processing failed",
-            description: result.error || fallbackResult.error || "Failed to extract text from PDF. Please try copying and pasting the text instead.",
+            description: fallbackResult.error || "Failed to extract text from PDF. Please try copying and pasting the text instead.",
             variant: "destructive",
           });
+          
+          // Add helpful suggestion for binary PDFs
+          if (fallbackResult.error?.includes('meaningful text')) {
+            toast({
+              title: "PDF Content Issue",
+              description: "This PDF appears to contain mostly binary data or images. Try copying text directly from the PDF or use a different file.",
+              variant: "destructive",
+            });
+          }
         }
       }
     } catch (error) {
