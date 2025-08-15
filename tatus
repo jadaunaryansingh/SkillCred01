@@ -1,0 +1,5 @@
+[33ma265f4d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix Netlify functions: Add PDF processing endpoint and enhance quiz generation debugging
+[33me2fec09[m Fix Netlify deployment: Add proper functions, text cleaning, and build process
+[33m1252267[m Fix dependency conflicts and platform binary issues for Netlify deployment
+[33mbad2a90[m Fix dependency conflicts and platform binary issues for Netlify deployment
+[33m5a6c0d3[m Fix dependency conflicts and platform binary issues for Netlify deployment

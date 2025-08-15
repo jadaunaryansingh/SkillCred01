@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check
 app.get("/api/ping", (_req, res) => {
-  res.json({ message: "pong" });
+  res.json({ message: "pong - updated" });
 });
 
 // PDF processing endpoint
