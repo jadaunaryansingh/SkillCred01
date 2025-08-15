@@ -7,6 +7,29 @@ const app = express();
 
 // Middleware setup
 app.use(cors());
+
+// Add raw body parser to capture exact request body
+app.use(express.raw({ type: 'application/json', limit: '50mb' }));
+
+// Custom middleware to parse JSON manually
+app.use((req, res, next) => {
+  if (req.headers['content-type'] === 'application/json' && req.body) {
+    try {
+      // Convert Buffer to string and parse JSON
+      const bodyString = req.body.toString('utf8');
+      console.log('🔍 RAW BODY STRING:', bodyString.substring(0, 200));
+      console.log('🔍 RAW BODY LENGTH:', bodyString.length);
+      
+      req.body = JSON.parse(bodyString);
+      console.log('🔍 PARSED BODY SUCCESS:', typeof req.body, Object.keys(req.body || {}));
+    } catch (parseError) {
+      console.log('❌ JSON PARSE ERROR:', parseError.message);
+      console.log('🔍 FAILED BODY STRING:', req.body.toString('utf8').substring(0, 200));
+    }
+  }
+  next();
+});
+
 app.use(express.json({ limit: '50mb' })); // Increased limit
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -25,8 +48,8 @@ app.use((req, res, next) => {
 // Health check with new message
 app.get("/api/ping", (_req, res) => {
   res.json({ 
-    message: "pong - NEW FUNCTION V3.0 WORKING!", 
-    version: "3.0",
+    message: "pong - NEW FUNCTION V3.1 WORKING!", 
+    version: "3.1",
     timestamp: new Date().toISOString()
   });
 });
@@ -35,58 +58,26 @@ app.get("/api/ping", (_req, res) => {
 app.post("/api/generate-quiz", async (req, res) => {
   console.log('🚀 NEW FUNCTION V3.0 - QUIZ GENERATION START ===');
   
-  // DEBUG PATCH: Log raw request before any processing
-  console.log('🔍 RAW REQUEST DEBUG:');
-  console.log('  - Raw req.body:', req.body);
-  console.log('  - Raw req.body type:', typeof req.body);
-  console.log('  - Raw req.body keys:', Object.keys(req.body || {}));
-  console.log('  - Raw req.body stringified:', JSON.stringify(req.body));
-  console.log('  - Raw req.body length:', JSON.stringify(req.body).length);
+  // DEBUG: Log the request details
+  console.log('🔍 REQUEST DEBUG:');
+  console.log('  - req.body:', req.body);
+  console.log('  - req.body type:', typeof req.body);
+  console.log('  - req.body keys:', Object.keys(req.body || {}));
+  console.log('  - Content-Type header:', req.headers['content-type']);
   
-  // NEW: Check if it's an array
-  if (Array.isArray(req.body)) {
-    console.log('🚨 ALERT: req.body is an ARRAY, not an OBJECT!');
-    console.log('  - Array length:', req.body.length);
-    console.log('  - First 10 elements:', req.body.slice(0, 10));
-    console.log('  - This explains why textContent is undefined!');
-  }
-
-  console.log('Request headers:', JSON.stringify(req.headers, null, 2));
-  console.log('Request body:', JSON.stringify(req.body, null, 2));
-  console.log('Request body type:', typeof req.body);
-  console.log('Request body keys:', Object.keys(req.body || {}));
-  console.log('Content-Type header:', req.headers['content-type']);
-  
-  // Extract data with new structure
+  // Extract data
   const requestData = req.body || {};
-  let textContent = requestData.textContent;
+  const textContent = requestData.textContent;
   const questionCount = requestData.questionCount || 20;
   
-  // FIX: Handle case where req.body is an array (corrupted JSON)
-  if (Array.isArray(req.body) && req.body.length > 0) {
-    console.log('🔧 FIXING: Converting array back to text content');
-    // Join the array elements to reconstruct the text
-    textContent = req.body.join('');
-    console.log('  - Reconstructed text length:', textContent.length);
-    console.log('  - Reconstructed text preview:', textContent.substring(0, 100));
-  }
-
-  // DEBUG PATCH: Check for different field names
-  console.log('🔍 FIELD NAME DEBUG:');
-  console.log('  - textContent field:', textContent);
-  console.log('  - text field:', requestData.text);
-  console.log('  - content field:', requestData.content);
-  console.log('  - All available fields:', Object.keys(requestData));
+  console.log('🔍 EXTRACTED DATA:');
+  console.log('  - textContent length:', textContent?.length || 0);
+  console.log('  - textContent preview:', textContent?.substring(0, 100));
+  console.log('  - questionCount:', questionCount);
   
-  console.log('Extracted textContent:', textContent);
-  console.log('textContent type:', typeof textContent);
-  console.log('textContent length:', textContent?.length || 0);
-  console.log('textContent trimmed length:', textContent?.trim()?.length || 0);
-  console.log('textContent first 100 chars:', textContent?.substring(0, 100));
-  
-  // New validation logic
+  // Validation
   if (!textContent || textContent.trim().length < 50) {
-    console.log('❌ VALIDATION FAILED IN V3.0:');
+    console.log('❌ VALIDATION FAILED:');
     console.log('  - textContent exists:', !!textContent);
     console.log('  - textContent length:', textContent?.length || 0);
     console.log('  - textContent trimmed length:', textContent?.trim()?.length || 0);
@@ -101,7 +92,7 @@ app.post("/api/generate-quiz", async (req, res) => {
     });
   }
 
-  // Success response with new format
+  // Success response
   res.json({
     success: true,
     message: "V3.0 Quiz generation working!",
@@ -125,7 +116,7 @@ app.post("/api/process-pdf", async (req, res) => {
 module.exports.handler = serverless(app);
 
 // Force Netlify to recognize this as a completely new function
-console.log('🚀 NEW FUNCTION V3.0 LOADED at:', new Date().toISOString());
-console.log('FUNCTION VERSION: QUIZ-API-v3.0-COMPLETE-REWRITE');
-console.log('This is a COMPLETELY NEW function to force Netlify rebuild');
-console.log('All endpoints have been rewritten with new logic');
+console.log('🚀 NEW FUNCTION V3.1 LOADED at:', new Date().toISOString());
+console.log('FUNCTION VERSION: QUIZ-API-v3.1-RAW-BODY-PARSER-FIX');
+console.log('This is a COMPLETELY NEW function with raw body parser to fix JSON corruption');
+console.log('All endpoints have been rewritten with new logic and proper JSON parsing');
