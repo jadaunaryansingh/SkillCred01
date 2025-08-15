@@ -51,7 +51,13 @@ app.post("/api/generate-quiz", async (req, res) => {
     console.log('  - textContent exists:', !!textContent);
     console.log('  - textContent length:', textContent?.length || 0);
     console.log('  - textContent trimmed length:', textContent?.trim()?.length || 0);
-    return res.status(400).json({ error: "Text content must be at least 50 characters long - UPDATED VERSION" });
+    return res.status(400).json({ 
+      error: "VALIDATION ERROR: Text content must be at least 50 characters long",
+      code: "TEXT_TOO_SHORT",
+      receivedLength: textContent?.length || 0,
+      requiredLength: 50,
+      timestamp: new Date().toISOString()
+    });
   }
 
   // Return success response
@@ -77,3 +83,5 @@ module.exports.handler = serverless(app);
 
 // Force Netlify to recognize this as a new function
 console.log('Function loaded at:', new Date().toISOString());
+console.log('FUNCTION VERSION: QUIZ-API-v2.0');
+console.log('This is a completely new function to force Netlify rebuild');
