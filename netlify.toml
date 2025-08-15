@@ -2,9 +2,14 @@
   command = "npm run build:client"
   functions = "netlify/functions"
   publish = "dist/spa"
+  ignore = "netlify/functions/dist"
 
 [[redirects]]
   force = true
   from = "/api/*"
   status = 200
   to = "/.netlify/functions/api/:splat"
+
+# Force function rebuild
+[functions]
+  node_bundler = "esbuild"

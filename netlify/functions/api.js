@@ -47,3 +47,6 @@ app.post("/api/process-pdf", async (req, res) => {
 
 // Export the serverless handler
 module.exports.handler = serverless(app);
+
+// Force Netlify to recognize this as a new function
+console.log('Function loaded at:', new Date().toISOString());
