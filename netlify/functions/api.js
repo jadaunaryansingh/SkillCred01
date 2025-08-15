@@ -35,7 +35,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Global debugging middleware
 app.use((req, res, next) => {
-  console.log('🚀 NEW FUNCTION V3.0 - MIDDLEWARE DEBUG:');
+  console.log('🚀 NEW FUNCTION V3.1 - MIDDLEWARE DEBUG:');
   console.log('  - Method:', req.method);
   console.log('  - URL:', req.url);
   console.log('  - Content-Type:', req.headers['content-type']);
@@ -56,7 +56,7 @@ app.get("/api/ping", (_req, res) => {
 
 // Quiz generation endpoint - COMPLETELY REWRITTEN
 app.post("/api/generate-quiz", async (req, res) => {
-  console.log('🚀 NEW FUNCTION V3.0 - QUIZ GENERATION START ===');
+  console.log('🚀 NEW FUNCTION V3.1 - QUIZ GENERATION START ===');
   
   // DEBUG: Log the request details
   console.log('🔍 REQUEST DEBUG:');
@@ -83,11 +83,11 @@ app.post("/api/generate-quiz", async (req, res) => {
     console.log('  - textContent trimmed length:', textContent?.trim()?.length || 0);
     
     return res.status(400).json({ 
-      error: "V3.0 VALIDATION ERROR: Text content must be at least 50 characters long",
+      error: "V3.1 VALIDATION ERROR: Text content must be at least 50 characters long",
       code: "V3_TEXT_TOO_SHORT",
       receivedLength: textContent?.length || 0,
       requiredLength: 50,
-      version: "3.0",
+      version: "3.1",
       timestamp: new Date().toISOString()
     });
   }
@@ -95,10 +95,26 @@ app.post("/api/generate-quiz", async (req, res) => {
   // Success response
   res.json({
     success: true,
-    message: "V3.0 Quiz generation working!",
-    version: "3.0",
+    message: "V3.1 Quiz generation working!",
+    version: "3.1",
     receivedLength: textContent.length,
     questionCount,
+    quiz: {
+      questions: [
+        {
+          id: 1,
+          question: "Sample question based on: " + textContent.substring(0, 50) + "...",
+          options: [
+            "Option A",
+            "Option B", 
+            "Option C",
+            "Option D"
+          ],
+          correctAnswer: 0,
+          explanation: "This is a sample question generated from your text content."
+        }
+      ]
+    },
     timestamp: new Date().toISOString()
   });
 });
