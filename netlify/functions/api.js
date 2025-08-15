@@ -15,16 +15,42 @@ app.get("/api/ping", (_req, res) => {
   res.json({ message: "pong - working!" });
 });
 
+// Test endpoint to verify function is working
+app.post("/api/test", (req, res) => {
+  console.log('=== TEST ENDPOINT ===');
+  console.log('Request body:', req.body);
+  console.log('Request body type:', typeof req.body);
+  console.log('Request body keys:', Object.keys(req.body || {}));
+  
+  res.json({ 
+    message: "Test endpoint working!",
+    receivedBody: req.body,
+    bodyType: typeof req.body,
+    bodyKeys: Object.keys(req.body || {}),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Quiz generation endpoint
 app.post("/api/generate-quiz", async (req, res) => {
   console.log('=== QUIZ GENERATION REQUEST START ===');
   console.log('Request body:', JSON.stringify(req.body, null, 2));
+  console.log('Request body type:', typeof req.body);
+  console.log('Request body keys:', Object.keys(req.body || {}));
   
   const { textContent, questionCount = 20 } = req.body;
   
-  console.log('Received textContent length:', textContent?.length || 0);
+  console.log('Extracted textContent:', textContent);
+  console.log('textContent type:', typeof textContent);
+  console.log('textContent length:', textContent?.length || 0);
+  console.log('textContent trimmed length:', textContent?.trim()?.length || 0);
+  console.log('textContent first 100 chars:', textContent?.substring(0, 100));
   
   if (!textContent || textContent.trim().length < 50) {
+    console.log('❌ VALIDATION FAILED:');
+    console.log('  - textContent exists:', !!textContent);
+    console.log('  - textContent length:', textContent?.length || 0);
+    console.log('  - textContent trimmed length:', textContent?.trim()?.length || 0);
     return res.status(400).json({ error: "Text content must be at least 50 characters long - UPDATED VERSION" });
   }
 
