@@ -24,8 +24,8 @@ app.post("/api/generate-quiz", async (req, res) => {
   
   console.log('Received textContent length:', textContent?.length || 0);
   
-  if (!textContent || textContent.trim().length < 100) {
-    return res.status(400).json({ error: "Text content must be at least 100 characters long" });
+  if (!textContent || textContent.trim().length < 50) {
+    return res.status(400).json({ error: "Text content must be at least 50 characters long" });
   }
 
   // Return success response
