@@ -125,8 +125,20 @@ export async function extractTextFromPDF(file: File): Promise<ExtractedPDFConten
         };
       }
       
+      // Use aggressive cleaning on the extracted text
+      const cleanedText = cleanExtractedText(fullText);
+      
+      if (cleanedText.length < 50) {
+        return {
+          text: '',
+          pageCount,
+          success: false,
+          error: 'After cleaning, insufficient readable text was found in the PDF. The PDF might contain mostly binary data or images.'
+        };
+      }
+      
       return {
-        text: fullText.trim(),
+        text: cleanedText,
         pageCount,
         success: true
       };
@@ -279,6 +291,78 @@ export function validatePDFStructure(file: File): Promise<{ valid: boolean; erro
   });
 }
 
+// Function to aggressively clean extracted text and remove binary artifacts
+export function cleanExtractedText(text: string): string {
+  console.log('🔍 CLEANING EXTRACTED TEXT:', { originalLength: text.length });
+  
+  // Step 1: Remove all non-printable and binary characters
+  let cleaned = text
+    .replace(/[^\x20-\x7E\n\r\t]/g, '') // Keep only printable ASCII
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+  
+  console.log('🔍 AFTER ASCII FILTERING:', { length: cleaned.length, preview: cleaned.substring(0, 100) });
+  
+  // Step 2: Remove PDF metadata and binary artifacts
+  cleaned = cleaned
+    .replace(/Mozilla\/\d+\.\d+.*?Skia\/PDF.*?/g, '') // Remove browser/PDF metadata
+    .replace(/D:\d{14}.*?/g, '') // Remove PDF dates
+    .replace(/[A-Z]{2,}\/[A-Z0-9\s]+/g, '') // Remove PDF operators
+    .replace(/\d{10,}_[A-Z\s]+/g, '') // Remove long numbers with names
+    .replace(/[A-Z]{3,}\s*[A-Z0-9\s]*\s*[A-Z0-9\s]*/g, '') // Remove PDF internal structures
+    .replace(/endobj|endstream|trailer|startxref|xref/g, '') // Remove PDF keywords
+    .replace(/Type\s*\/\s*[A-Za-z]+/g, '') // Remove PDF type declarations
+    .replace(/Filter\s*\/\s*[A-Za-z]+/g, '') // Remove PDF filter declarations
+    .replace(/Length\s*\d+/g, '') // Remove PDF length declarations
+    .replace(/stream.*?endstream/g, '') // Remove PDF stream content
+    .replace(/[A-Za-z]+\s*\/\s*[A-Za-z]+/g, '') // Remove PDF object references
+    .replace(/\d+\s+\d+\s+R/g, '') // Remove PDF object numbers
+    .replace(/[A-Za-z]+\s*\[[^\]]*\]/g, '') // Remove PDF arrays
+    .replace(/[A-Za-z]+\s*<[^>]*>/g, '') // Remove PDF dictionaries
+    .replace(/\s+/g, ' ') // Normalize whitespace again
+    .trim();
+  
+  console.log('🔍 AFTER PDF CLEANING:', { length: cleaned.length, preview: cleaned.substring(0, 100) });
+  
+  // Step 3: Extract only meaningful text patterns
+  const meaningfulPatterns = [
+    // Look for actual readable text (words with reasonable length)
+    /[A-Za-z]{3,20}/g,
+    // Look for sentences (text ending with punctuation)
+    /[A-Za-z][^.!?]*[.!?]/g,
+    // Look for text in quotes
+    /"[^"]{5,}"/g,
+    // Look for text in parentheses
+    /\([^)]{5,}\)/g
+  ];
+  
+  let extractedText = '';
+  for (const pattern of meaningfulPatterns) {
+    const matches = cleaned.match(pattern) || [];
+    for (const match of matches) {
+      // Clean up each match
+      const cleanMatch = match
+        .replace(/[^\w\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/g, '') // Keep meaningful punctuation
+        .trim();
+      
+      if (cleanMatch.length > 5 && /[A-Za-z]/.test(cleanMatch)) {
+        extractedText += cleanMatch + ' ';
+      }
+    }
+  }
+  
+  // Step 4: Final cleanup
+  const finalText = extractedText
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .replace(/[^\w\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/g, '') // Final punctuation cleanup
+    .replace(/\s+/g, ' ') // Normalize whitespace again
+    .trim();
+  
+  console.log('🔍 FINAL CLEANED TEXT:', { length: finalText.length, preview: finalText.substring(0, 200) });
+  
+  return finalText;
+}
+
 // Function to detect if PDF contains mostly binary data
 export function detectBinaryContent(text: string): { isBinary: boolean; readablePercentage: number } {
   const totalChars = text.length;
@@ -379,37 +463,35 @@ export async function extractTextFallback(file: File): Promise<{ text: string; s
     console.log('Extracted text preview:', cleanedText.substring(0, 200));
     
     if (cleanedText.length > 100) {
-      return {
-        text: cleanedText,
-        success: true
-      };
-    } else {
-      // If we still don't have enough text, try a different approach
-      console.log('Trying alternative text extraction...');
+      // Use the aggressive cleaning function for final cleanup
+      const finalCleanedText = cleanExtractedText(cleanedText);
       
-      // Look for any readable text in the file
-      const readableChars = text
-        .split('')
-        .filter(char => /[A-Za-z0-9\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/.test(char))
-        .join('');
-      
-      const finalText = readableChars
-        .replace(/\s+/g, ' ')
-        .trim();
-      
-      if (finalText.length > 100) {
+      if (finalCleanedText.length > 50) {
         return {
-          text: finalText,
+          text: finalCleanedText,
           success: true
         };
       }
-      
+    }
+    
+    // If we still don't have enough text, try a different approach
+    console.log('Trying alternative text extraction...');
+    
+    // Use the aggressive cleaning function on the raw text
+    const aggressivelyCleanedText = cleanExtractedText(text);
+    
+    if (aggressivelyCleanedText.length > 100) {
       return {
-        text: '',
-        success: false,
-        error: 'Could not extract meaningful text from PDF using fallback method'
+        text: aggressivelyCleanedText,
+        success: true
       };
     }
+    
+    return {
+      text: '',
+      success: false,
+      error: 'Could not extract meaningful text from PDF using fallback method'
+    };
   } catch (error) {
     console.error('Fallback extraction error:', error);
     return {
