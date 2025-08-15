@@ -43,6 +43,14 @@ app.post("/api/generate-quiz", async (req, res) => {
   console.log('  - Raw req.body stringified:', JSON.stringify(req.body));
   console.log('  - Raw req.body length:', JSON.stringify(req.body).length);
   
+  // NEW: Check if it's an array
+  if (Array.isArray(req.body)) {
+    console.log('🚨 ALERT: req.body is an ARRAY, not an OBJECT!');
+    console.log('  - Array length:', req.body.length);
+    console.log('  - First 10 elements:', req.body.slice(0, 10));
+    console.log('  - This explains why textContent is undefined!');
+  }
+
   console.log('Request headers:', JSON.stringify(req.headers, null, 2));
   console.log('Request body:', JSON.stringify(req.body, null, 2));
   console.log('Request body type:', typeof req.body);
@@ -51,9 +59,18 @@ app.post("/api/generate-quiz", async (req, res) => {
   
   // Extract data with new structure
   const requestData = req.body || {};
-  const textContent = requestData.textContent;
+  let textContent = requestData.textContent;
   const questionCount = requestData.questionCount || 20;
   
+  // FIX: Handle case where req.body is an array (corrupted JSON)
+  if (Array.isArray(req.body) && req.body.length > 0) {
+    console.log('🔧 FIXING: Converting array back to text content');
+    // Join the array elements to reconstruct the text
+    textContent = req.body.join('');
+    console.log('  - Reconstructed text length:', textContent.length);
+    console.log('  - Reconstructed text preview:', textContent.substring(0, 100));
+  }
+
   // DEBUG PATCH: Check for different field names
   console.log('🔍 FIELD NAME DEBUG:');
   console.log('  - textContent field:', textContent);
