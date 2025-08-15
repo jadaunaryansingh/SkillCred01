@@ -114,11 +114,24 @@ export default function Index() {
         console.log('Server response result:', result);
       }
 
-      if (result.success && result.textContent) {
-        setTextContent(result.textContent);
+      if (result.success && result.text) {
+        // Check if the extracted text is mostly readable
+        const readableChars = result.text.split('').filter(char => /[A-Za-z0-9\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/.test(char)).length;
+        const readablePercentage = (readableChars / result.text.length) * 100;
+        
+        if (readablePercentage < 50) {
+          toast({
+            title: "PDF contains mostly binary data",
+            description: "This PDF appears to contain mostly images or binary content. Try uploading a different PDF with more text content.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        setTextContent(result.text);
         toast({
-          title: "PDF processed successfully",
-          description: result.message || "Text extracted and ready for quiz generation.",
+          title: "PDF processed successfully!",
+          description: `Extracted ${result.text.length} characters of text.`,
         });
       } else {
         // Fallback to client-side processing
