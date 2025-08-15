@@ -25,15 +25,16 @@ app.post("/api/generate-quiz", async (req, res) => {
   console.log('Received textContent length:', textContent?.length || 0);
   
   if (!textContent || textContent.trim().length < 50) {
-    return res.status(400).json({ error: "Text content must be at least 50 characters long" });
+    return res.status(400).json({ error: "Text content must be at least 50 characters long - UPDATED VERSION" });
   }
 
   // Return success response
   res.json({
     success: true,
-    message: "Quiz generation working!",
+    message: "Quiz generation working! - UPDATED VERSION",
     receivedLength: textContent.length,
-    questionCount
+    questionCount,
+    timestamp: new Date().toISOString()
   });
 });
 
