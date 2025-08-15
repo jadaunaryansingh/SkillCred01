@@ -215,14 +215,27 @@ export default function Index() {
       return;
     }
 
-    // Clean the text content before sending to API
-    const cleanedTextContent = textContent
-      .replace(/[^\x20-\x7E\n\r\t]/g, '') // Remove non-printable characters
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .trim();
+            // Clean the text content before sending to API
+        const cleanedTextContent = textContent
+          .replace(/[^\x20-\x7E\n\r\t]/g, '') // Remove non-printable characters
+          .replace(/\s+/g, ' ') // Normalize whitespace
+          .replace(/[^\w\s.,!?;:()[\]{}"'\-]/g, '') // Remove special characters except basic punctuation
+          .replace(/\s+/g, ' ') // Normalize whitespace again
+          .trim();
 
     console.log('Cleaned text content length:', cleanedTextContent.length);
     console.log('Cleaned text preview:', cleanedTextContent.substring(0, 100));
+
+    // Only proceed if we have meaningful text
+    if (cleanedTextContent.length < 50) {
+      console.error('Cleaned text is too short:', cleanedTextContent);
+      toast({
+        title: "Invalid content",
+        description: "Could not extract meaningful text from PDF. Please try a different file.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (!cleanedTextContent.trim()) {
       toast({
@@ -236,12 +249,26 @@ export default function Index() {
     setIsGenerating(true);
     try {
       const requestBody = { textContent: cleanedTextContent, questionCount };
-      console.log('=== REQUEST DEBUG ===');
-      console.log('textContent state:', textContent);
-      console.log('cleanedTextContent:', cleanedTextContent);
-      console.log('requestBody:', requestBody);
-      console.log('JSON stringified:', JSON.stringify(requestBody));
-      console.log('Body length:', JSON.stringify(requestBody).length);
+      
+      // ULTRA DEBUG - See exactly what's being sent
+      console.log('=== ULTRA DEBUG ===');
+      console.log('1. textContent type:', typeof textContent);
+      console.log('2. textContent length:', textContent?.length || 'NULL');
+      console.log('3. cleanedTextContent type:', typeof cleanedTextContent);
+      console.log('4. cleanedTextContent length:', cleanedTextContent?.length || 'NULL');
+      console.log('5. cleanedTextContent preview:', cleanedTextContent?.substring(0, 100));
+      console.log('6. requestBody:', requestBody);
+      console.log('7. JSON stringified:', JSON.stringify(requestBody));
+      console.log('8. Body length:', JSON.stringify(requestBody).length);
+      
+      // Validate before sending
+      if (!cleanedTextContent || cleanedTextContent.trim().length === 0) {
+        console.error('❌ ERROR: cleanedTextContent is empty!');
+        console.error('textContent:', textContent);
+        console.error('cleanedTextContent:', cleanedTextContent);
+        alert('Text content is empty. Please try again.');
+        return;
+      }
       
       const response = await fetch("/api/generate-quiz", {
         method: "POST",
