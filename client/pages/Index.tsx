@@ -235,12 +235,21 @@ export default function Index() {
 
     setIsGenerating(true);
     try {
+      const requestBody = { textContent: cleanedTextContent, questionCount };
+      console.log('Sending request to API:', {
+        url: '/api/generate-quiz',
+        method: 'POST',
+        bodySize: JSON.stringify(requestBody).length,
+        textContentLength: cleanedTextContent.length,
+        questionCount
+      });
+      
       const response = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ textContent: cleanedTextContent, questionCount }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {

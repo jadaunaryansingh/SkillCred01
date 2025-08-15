@@ -2,17 +2,26 @@ import { RequestHandler } from "express";
 import { QuizGenerationRequest, QuizGenerationResponse } from "@shared/api";
 
 export const handleGenerateQuiz: RequestHandler = async (req, res) => {
+  console.log('=== QUIZ GENERATION REQUEST START ===');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  console.log('Request headers:', req.headers);
+  
   // Extract textContent at the top level so it's available in catch block
   const { textContent, questionCount = 20 } = req.body as QuizGenerationRequest;
   
-  console.log('Received quiz generation request:', {
+  console.log('Extracted data:', {
     textContentLength: textContent?.length || 0,
     questionCount,
     hasTextContent: !!textContent,
-    textContentType: typeof textContent
+    textContentType: typeof textContent,
+    textContentIsString: typeof textContent === 'string',
+    textContentIsEmpty: textContent === '',
+    textContentIsNull: textContent === null,
+    textContentIsUndefined: textContent === undefined
   });
   
   if (!textContent) {
+    console.log('❌ textContent is falsy, returning error');
     return res.status(400).json({ error: "Text content is required" });
   }
 
