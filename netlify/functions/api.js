@@ -10,6 +10,17 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Debug middleware
+app.use((req, res, next) => {
+  console.log('🔍 MIDDLEWARE DEBUG:');
+  console.log('  - Method:', req.method);
+  console.log('  - URL:', req.url);
+  console.log('  - Content-Type:', req.headers['content-type']);
+  console.log('  - Body after middleware:', req.body);
+  console.log('  - Body type:', typeof req.body);
+  next();
+});
+
 // Health check
 app.get("/api/ping", (_req, res) => {
   res.json({ message: "pong - working!" });
@@ -34,9 +45,11 @@ app.post("/api/test", (req, res) => {
 // Quiz generation endpoint
 app.post("/api/generate-quiz", async (req, res) => {
   console.log('=== QUIZ GENERATION REQUEST START ===');
-  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  console.log('Raw request headers:', req.headers);
+  console.log('Raw request body:', req.body);
   console.log('Request body type:', typeof req.body);
   console.log('Request body keys:', Object.keys(req.body || {}));
+  console.log('Content-Type header:', req.headers['content-type']);
   
   const { textContent, questionCount = 20 } = req.body;
   
