@@ -15,11 +15,28 @@ app.get("/api/ping", (_req, res) => {
   res.json({ message: "pong" });
 });
 
+// PDF processing endpoint
+app.post("/api/process-pdf", async (req, res) => {
+  console.log('=== PDF PROCESSING REQUEST START ===');
+  console.log('Request headers:', req.headers);
+  
+  // For now, return a simple response since we're using client-side processing
+  res.json({
+    success: false,
+    error: "Server-side PDF processing temporarily unavailable",
+    message: "PDF processing is handled client-side. The client will extract text automatically."
+  });
+});
+
 // Quiz generation endpoint
 app.post("/api/generate-quiz", async (req, res) => {
   console.log('=== QUIZ GENERATION REQUEST START ===');
+  console.log('Request method:', req.method);
+  console.log('Request URL:', req.url);
+  console.log('Request body type:', typeof req.body);
   console.log('Request body:', JSON.stringify(req.body, null, 2));
   console.log('Request headers:', req.headers);
+  console.log('Content-Type header:', req.headers['content-type']);
   
   const { textContent, questionCount = 20 } = req.body;
   
