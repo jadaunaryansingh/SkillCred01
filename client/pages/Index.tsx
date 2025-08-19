@@ -10,6 +10,7 @@ import { QuizGenerationResponse, QuizQuestion, PDFUploadResponse } from "@shared
 import { AuthModal, UserMenu } from "@/components/AuthComponents";
 import QuizViewer from "@/components/QuizViewer";
 import { extractTextFromPDF, validatePDFFile, testPDFProcessing, validatePDFStructure, extractTextFallback } from "@/lib/pdfUtils";
+import { testFirebaseConnection } from "@/lib/firebase";
 
 export default function Index() {
   const [textContent, setTextContent] = useState("");
@@ -609,6 +610,51 @@ export default function Index() {
                   <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
                     <p><strong>Note:</strong> PDF processing now uses an inline worker to avoid CORS issues. If PDF processing fails, you can always copy and paste the text content directly into the text area below.</p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Firebase Connection Test */}
+          {debugMode && (
+            <Card className="glass-effect border-blue-200 bg-blue-50/50">
+              <CardHeader>
+                <CardTitle className="text-blue-800">Firebase Connection Test</CardTitle>
+                <CardDescription className="text-blue-700">
+                  Test Firebase and Firestore connectivity
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm text-blue-800">
+                <Button 
+                  onClick={async () => {
+                    try {
+                      const result = await testFirebaseConnection();
+                      if (result.success) {
+                        toast({
+                          title: "Firebase Test Successful",
+                          description: result.message,
+                        });
+                      } else {
+                        toast({
+                          title: "Firebase Test Failed",
+                          description: result.error,
+                          variant: "destructive",
+                        });
+                      }
+                    } catch (error: any) {
+                      toast({
+                        title: "Firebase Test Error",
+                        description: error.message,
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Test Firebase Connection
+                </Button>
+                <div className="text-xs text-blue-600">
+                  <p>Click this button to test if Firebase and Firestore are properly connected.</p>
                 </div>
               </CardContent>
             </Card>

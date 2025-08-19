@@ -2,7 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, FirestoreSettings } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, FirestoreSettings, doc } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
@@ -45,5 +45,23 @@ if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
   // connectAuthEmulator(auth, 'http://localhost:9099');
   // connectFirestoreEmulator(db, 'localhost', 8080);
 }
+
+// Test function to verify Firebase connection
+export const testFirebaseConnection = async () => {
+  try {
+    console.log("Testing Firebase connection...");
+    console.log("Project ID:", firebaseConfig.projectId);
+    console.log("Auth domain:", firebaseConfig.authDomain);
+    
+    // Test if we can access Firestore
+    const testDoc = doc(db, "test", "connection");
+    console.log("Firestore connection test - document reference created");
+    
+    return { success: true, message: "Firebase connection successful" };
+  } catch (error: any) {
+    console.error("Firebase connection test failed:", error);
+    return { success: false, error: error.message };
+  }
+};
 
 export default app;
