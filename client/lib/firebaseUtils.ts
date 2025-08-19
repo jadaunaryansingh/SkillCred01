@@ -94,6 +94,8 @@ export const signOut = async () => {
 // User profile functions
 export const createUserProfile = async (user: User) => {
   try {
+    console.log("Creating user profile for:", user.uid);
+    
     const userProfile: UserProfile = {
       uid: user.uid,
       email: user.email!,
@@ -104,10 +106,21 @@ export const createUserProfile = async (user: User) => {
       averageScore: 0,
     };
 
-    await setDoc(doc(db, "users", user.uid), userProfile);
+    console.log("User profile data:", userProfile);
+    
+    const docRef = doc(db, "users", user.uid);
+    console.log("Document reference created:", docRef.path);
+    
+    await setDoc(docRef, userProfile);
+    console.log("User profile successfully written to Firestore");
+    
     return userProfile;
   } catch (error: any) {
-    console.warn("Could not create user profile in Firestore. Check security rules.");
+    console.error("Could not create user profile in Firestore. Check security rules.");
+    console.error("Error details:", error);
+    console.error("Error code:", error.code);
+    console.error("Error message:", error.message);
+    
     // Return a basic profile even if Firestore write fails
     return {
       uid: user.uid,
@@ -134,7 +147,23 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
     console.log("User profile not found, creating new profile...");
     const user = auth.currentUser;
     if (user) {
-      return await createUserProfile(user);
+      try {
+        const newProfile = await createUserProfile(user);
+        console.log("New user profile created successfully:", newProfile);
+        return newProfile;
+      } catch (createError: any) {
+        console.error("Failed to create user profile:", createError);
+        // Return a basic profile as fallback
+        return {
+          uid: user.uid,
+          email: user.email!,
+          displayName: user.displayName || undefined,
+          createdAt: Timestamp.now(),
+          totalQuizzes: 0,
+          totalAttempts: 0,
+          averageScore: 0,
+        };
+      }
     }
     
     return null;

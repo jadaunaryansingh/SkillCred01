@@ -33,16 +33,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("Auth state changed. User:", user ? user.uid : "null");
       setUser(user);
       
       if (user) {
         try {
+          console.log("Fetching user profile for:", user.uid);
           const profile = await getUserProfile(user.uid);
+          console.log("User profile fetched successfully:", profile);
           setUserProfile(profile);
         } catch (error: any) {
           console.warn("Could not fetch user profile from Firestore:", error?.message);
+          console.error("Full error:", error);
           // Create a basic profile from user data if Firestore is not accessible
-          setUserProfile({
+          const basicProfile = {
             uid: user.uid,
             email: user.email!,
             displayName: user.displayName || undefined,
@@ -50,9 +54,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
             totalQuizzes: 0,
             totalAttempts: 0,
             averageScore: 0,
-          });
+          };
+          console.log("Setting basic profile:", basicProfile);
+          setUserProfile(basicProfile);
         }
       } else {
+        console.log("No user, clearing profile");
         setUserProfile(null);
       }
       
