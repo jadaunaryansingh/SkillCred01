@@ -6,7 +6,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+firebase-debug.log
 
+# Dependencies
 node_modules
 dist
 dist-ssr
@@ -23,5 +25,21 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Build outputs
 .config/
-!.env
+build/
+out/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini

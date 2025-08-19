@@ -129,9 +129,33 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
     if (docSnap.exists()) {
       return docSnap.data() as UserProfile;
     }
+    
+    // If profile doesn't exist, create one
+    console.log("User profile not found, creating new profile...");
+    const user = auth.currentUser;
+    if (user) {
+      return await createUserProfile(user);
+    }
+    
     return null;
   } catch (error: any) {
     console.warn("Firestore access denied. Ensure security rules allow authenticated users to read their profiles.");
+    console.error("Error details:", error);
+    
+    // Return a basic profile as fallback
+    const user = auth.currentUser;
+    if (user) {
+      return {
+        uid: user.uid,
+        email: user.email!,
+        displayName: user.displayName || undefined,
+        createdAt: Timestamp.now(),
+        totalQuizzes: 0,
+        totalAttempts: 0,
+        averageScore: 0,
+      };
+    }
+    
     throw error;
   }
 };
