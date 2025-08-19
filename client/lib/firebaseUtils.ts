@@ -51,7 +51,7 @@ export interface QuizAttempt {
 export interface UserProfile {
   uid: string;
   email: string;
-  displayName?: string;
+  displayName: string | null;
   createdAt: Timestamp;
   totalQuizzes: number;
   totalAttempts: number;
@@ -99,7 +99,7 @@ export const createUserProfile = async (user: User) => {
     const userProfile: UserProfile = {
       uid: user.uid,
       email: user.email!,
-      displayName: user.displayName || undefined,
+      displayName: user.displayName || null, // Use null instead of undefined
       createdAt: Timestamp.now(),
       totalQuizzes: 0,
       totalAttempts: 0,
@@ -108,10 +108,17 @@ export const createUserProfile = async (user: User) => {
 
     console.log("User profile data:", userProfile);
     
+    // Filter out undefined values before sending to Firestore
+    const cleanProfile = Object.fromEntries(
+      Object.entries(userProfile).filter(([_, value]) => value !== undefined)
+    );
+    
+    console.log("Cleaned profile data:", cleanProfile);
+    
     const docRef = doc(db, "users", user.uid);
     console.log("Document reference created:", docRef.path);
     
-    await setDoc(docRef, userProfile);
+    await setDoc(docRef, cleanProfile);
     console.log("User profile successfully written to Firestore");
     
     return userProfile;
@@ -125,7 +132,7 @@ export const createUserProfile = async (user: User) => {
     return {
       uid: user.uid,
       email: user.email!,
-      displayName: user.displayName || undefined,
+      displayName: user.displayName || null,
       createdAt: Timestamp.now(),
       totalQuizzes: 0,
       totalAttempts: 0,
@@ -157,7 +164,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
         return {
           uid: user.uid,
           email: user.email!,
-          displayName: user.displayName || undefined,
+          displayName: user.displayName || null,
           createdAt: Timestamp.now(),
           totalQuizzes: 0,
           totalAttempts: 0,
@@ -177,7 +184,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
       return {
         uid: user.uid,
         email: user.email!,
-        displayName: user.displayName || undefined,
+        displayName: user.displayName || null,
         createdAt: Timestamp.now(),
         totalQuizzes: 0,
         totalAttempts: 0,

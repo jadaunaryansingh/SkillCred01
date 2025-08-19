@@ -49,7 +49,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const basicProfile = {
             uid: user.uid,
             email: user.email!,
-            displayName: user.displayName || undefined,
+            displayName: user.displayName || null,
             createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 } as any,
             totalQuizzes: 0,
             totalAttempts: 0,
