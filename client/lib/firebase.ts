@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, FirestoreSettings, doc } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getStorage, connectStorageEmulator } from "firebase/storage";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -44,6 +44,7 @@ if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
   // Uncomment these lines if you want to use Firebase emulators
   // connectAuthEmulator(auth, 'http://localhost:9099');
   // connectFirestoreEmulator(db, 'localhost', 8080);
+  // connectStorageEmulator(storage, 'localhost', 9199);
 }
 
 // Test function to verify Firebase connection

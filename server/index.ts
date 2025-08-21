@@ -4,6 +4,7 @@ import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { handleGenerateQuiz } from "./routes/generate-quiz";
 import { handlePDFUpload, handlePDFProcessing } from "./routes/process-pdf";
+import { handlePDFUpload as handlePDFCoUpload, handlePDFCoProcessing } from "./routes/pdf-co-api";
 
 export function createServer() {
   const app = express();
@@ -29,6 +30,9 @@ export function createServer() {
   
   // PDF upload route - no body parsing middleware applied
   app.post("/api/process-pdf", handlePDFUpload, handlePDFProcessing);
+  
+  // PDF.co API route for enhanced PDF processing
+  app.post("/api/process-pdf-co", handlePDFCoUpload, handlePDFCoProcessing);
 
   return app;
 }

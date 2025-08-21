@@ -91,18 +91,30 @@ export default function Index() {
         });
       }
 
-      // Try server-side processing first
+      // Try PDF.co API processing first (enhanced server-side processing)
       const formData = new FormData();
       formData.append('pdf', file);
 
       if (debugMode) {
-        console.log('Attempting server-side PDF processing...');
+        console.log('Attempting PDF.co API processing...');
       }
 
-      const response = await fetch('/api/process-pdf', {
+      let response = await fetch('/api/process-pdf-co', {
         method: 'POST',
         body: formData,
       });
+
+      // If PDF.co API fails, try the regular server-side processing as fallback
+      if (!response.ok) {
+        if (debugMode) {
+          console.log('PDF.co API failed, trying regular server-side processing...');
+        }
+        
+        response = await fetch('/api/process-pdf', {
+          method: 'POST',
+          body: formData,
+        });
+      }
 
       if (debugMode) {
         console.log('Server response status:', response.status);
@@ -129,14 +141,14 @@ export default function Index() {
           return;
         }
         
-        setTextContent(result.text);
+        setTextContent(result.textContent || result.text);
         toast({
           title: "PDF processed successfully!",
-          description: `Extracted ${result.text.length} characters of text.`,
+          description: `Extracted ${(result.textContent || result.text).length} characters of text using PDF.co API.`,
         });
       } else {
         // Fallback to client-side processing
-        console.log("Server-side PDF processing failed, trying fallback method...");
+        console.log("Both server-side PDF processing methods failed, trying client-side fallback...");
         
         // Try fallback method first since PDF.js is hanging
         const fallbackResult = await extractTextFallback(file);
