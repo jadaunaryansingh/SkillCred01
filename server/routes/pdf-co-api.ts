@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import multer from "multer";
 import axios from "axios";
+import FormData from "form-data";
 import { PDFUploadResponse } from "@shared/api";
 import { PDF_CO_CONFIG, validatePDFCoConfig } from "../config/pdf-co";
 
@@ -36,17 +37,36 @@ export const handlePDFCoProcessing: RequestHandler = async (req, res) => {
     // Validate PDF.co configuration
     validatePDFCoConfig();
 
-    // Convert PDF buffer to base64
-    const pdfBase64 = req.file.buffer.toString('base64');
+    // First, upload the PDF file to PDF.co
+    const formData = new FormData();
+    formData.append('file', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: 'application/pdf'
+    });
 
-    // Prepare the request payload for PDF.co API
+    // Upload file to PDF.co
+    const uploadResponse = await axios.post('https://api.pdf.co/v1/file/upload', formData, {
+      headers: {
+        'x-api-key': PDF_CO_CONFIG.API_KEY,
+        ...formData.getHeaders()
+      },
+      timeout: PDF_CO_CONFIG.TIMEOUT
+    });
+
+    if (!uploadResponse.data || !uploadResponse.data.url) {
+      throw new Error('Failed to upload file to PDF.co');
+    }
+
+    const uploadedFileUrl = uploadResponse.data.url;
+
+    // Now convert the uploaded file to text
     const requestPayload = {
-      url: `data:application/pdf;base64,${pdfBase64}`,
+      url: uploadedFileUrl,
       pages: "", // Empty means all pages
       outputFormat: "text"
     };
 
-    // Make request to PDF.co API
+    // Make request to PDF.co API to convert to text
     const response = await axios.post(PDF_CO_CONFIG.API_URL, requestPayload, {
       headers: {
         'x-api-key': PDF_CO_CONFIG.API_KEY,
