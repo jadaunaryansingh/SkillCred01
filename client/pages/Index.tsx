@@ -101,7 +101,7 @@ export default function Index() {
         console.log('Current window location:', window.location.href);
       }
 
-      let response = await fetch('/api/process-pdf-co', {
+      let response = await fetch('http://localhost:3001/api/process-pdf-co', {
         method: 'POST',
         body: formData,
       });
@@ -112,7 +112,7 @@ export default function Index() {
           console.log('PDF.co API failed, trying regular server-side processing...');
         }
         
-        response = await fetch('/api/process-pdf', {
+        response = await fetch('http://localhost:3001/api/process-pdf', {
           method: 'POST',
           body: formData,
         });
@@ -342,7 +342,7 @@ export default function Index() {
         return;
       }
       
-      const response = await fetch("/api/generate-quiz", {
+      const response = await fetch("http://localhost:3001/api/generate-quiz", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
