@@ -97,6 +97,8 @@ export default function Index() {
 
       if (debugMode) {
         console.log('Attempting PDF.co API processing...');
+        console.log('Calling URL:', '/api/process-pdf-co');
+        console.log('Current window location:', window.location.href);
       }
 
       let response = await fetch('/api/process-pdf-co', {
@@ -119,6 +121,8 @@ export default function Index() {
       if (debugMode) {
         console.log('Server response status:', response.status);
         console.log('Server response headers:', Object.fromEntries(response.headers.entries()));
+        console.log('Response URL:', response.url);
+        console.log('Response type:', response.type);
       }
 
       if (!response.ok) {
