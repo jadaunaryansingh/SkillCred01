@@ -8,6 +8,7 @@ import { handleDemo } from "./server/routes/demo";
 import { handleGenerateQuiz } from "./server/routes/generate-quiz";
 import { handlePDFUpload, handlePDFProcessing } from "./server/routes/process-pdf";
 import { handlePDFUpload as handlePDFCoUpload, handlePDFCoProcessing } from "./server/routes/pdf-co-api";
+import { handleGeminiPDFProcessing, handlePDFUpload as handleGeminiPDFUpload } from "./server/routes/gemini-pdf";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -37,10 +38,14 @@ app.post("/api/process-pdf", handlePDFUpload, handlePDFProcessing);
 // PDF.co API route for enhanced PDF processing
 app.post("/api/process-pdf-co", handlePDFCoUpload, handlePDFCoProcessing);
 
+// Gemini AI route for direct PDF processing
+app.post("/api/process-pdf-gemini", handleGeminiPDFUpload, handleGeminiPDFProcessing);
+
 app.listen(PORT, () => {
   console.log('🚀 Quiz Maker Express Server Started!');
   console.log(`📍 Server running on http://localhost:${PORT}`);
   console.log('\n📄 Available API Endpoints:');
+  console.log(`   POST /api/process-pdf-gemini - Gemini AI PDF processing`);
   console.log(`   POST /api/process-pdf-co    - PDF.co API processing`);
   console.log(`   POST /api/process-pdf       - Regular PDF processing`);
   console.log(`   POST /api/generate-quiz     - Quiz generation`);

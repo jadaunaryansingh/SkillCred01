@@ -91,31 +91,46 @@ export default function Index() {
         });
       }
 
-      // Try PDF.co API processing first (enhanced server-side processing)
-      const formData = new FormData();
+      // Try Gemini AI first (direct PDF processing)
+      let formData = new FormData();
       formData.append('pdf', file);
 
       if (debugMode) {
-        console.log('Attempting PDF.co API processing...');
-        console.log('Calling URL:', '/api/process-pdf-co');
+        console.log('Attempting Gemini AI processing...');
+        console.log('Calling URL:', '/api/process-pdf-gemini');
         console.log('Current window location:', window.location.href);
       }
 
-      let response = await fetch('http://localhost:3001/api/process-pdf-co', {
+      let response = await fetch('http://localhost:3001/api/process-pdf-gemini', {
         method: 'POST',
         body: formData,
       });
 
-      // If PDF.co API fails, try the regular server-side processing as fallback
+      // If Gemini AI fails, try PDF.co API as fallback
       if (!response.ok) {
         if (debugMode) {
-          console.log('PDF.co API failed, trying regular server-side processing...');
+          console.log('Gemini AI failed, trying PDF.co API...');
         }
         
-        response = await fetch('http://localhost:3001/api/process-pdf', {
+        formData = new FormData();
+        formData.append('pdf', file);
+        
+        response = await fetch('http://localhost:3001/api/process-pdf-co', {
           method: 'POST',
           body: formData,
         });
+
+        // If PDF.co API also fails, try the regular server-side processing as final fallback
+        if (!response.ok) {
+          if (debugMode) {
+            console.log('PDF.co API failed, trying regular server-side processing...');
+          }
+          
+          response = await fetch('http://localhost:3001/api/process-pdf', {
+            method: 'POST',
+            body: formData,
+          });
+        }
       }
 
       if (debugMode) {
