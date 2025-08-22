@@ -86,7 +86,7 @@ export async function extractTextFromPDF(file: File): Promise<ExtractedPDFConten
           
           // Combine all text items from the page with better formatting
           const pageText = textContent.items
-            .filter((item): item is any => 'str' in item && item.str.trim())
+            .filter((item: any) => 'str' in item && item.str.trim())
             .map((item: any) => item.str.trim())
             .join(' ');
           

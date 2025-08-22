@@ -121,16 +121,20 @@ export default function Index() {
         console.log('Server response headers:', Object.fromEntries(response.headers.entries()));
       }
 
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      }
+
       const result: PDFUploadResponse = await response.json();
 
       if (debugMode) {
         console.log('Server response result:', result);
       }
 
-      if (result.success && result.text) {
+      if (result.success && result.textContent) {
         // Check if the extracted text is mostly readable
-        const readableChars = result.text.split('').filter(char => /[A-Za-z0-9\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/.test(char)).length;
-        const readablePercentage = (readableChars / result.text.length) * 100;
+        const readableChars = result.textContent.split('').filter(char => /[A-Za-z0-9\s.,!?;:()[\]{}"'`~@#$%^&*+=<>|\\\/\-]/.test(char)).length;
+        const readablePercentage = (readableChars / result.textContent.length) * 100;
         
         if (readablePercentage < 50) {
           toast({
@@ -141,10 +145,10 @@ export default function Index() {
           return;
         }
         
-        setTextContent(result.textContent || result.text);
+        setTextContent(result.textContent);
         toast({
           title: "PDF processed successfully!",
-          description: `Extracted ${(result.textContent || result.text).length} characters of text using PDF.co API.`,
+          description: `Extracted ${result.textContent.length} characters of text using server processing.`,
         });
       } else {
         // Fallback to client-side processing
@@ -179,56 +183,69 @@ export default function Index() {
         }
       }
     } catch (error) {
-      console.error("PDF upload error:", error);
-      
-      // Try client-side fallback if server request fails
-      try {
-        console.log("Server request failed, trying client-side fallback...");
+        console.error("PDF upload error:", error);
         
-        // First validate the PDF structure
-        const structureValidation = await validatePDFStructure(file);
-        if (!structureValidation.valid) {
+        // Try client-side fallback if server request fails
+        try {
+          console.log("Server request failed, trying client-side fallback...");
+          
+          // First validate the PDF structure
+          const structureValidation = await validatePDFStructure(file);
+          if (!structureValidation.valid) {
+            toast({
+              title: "Invalid PDF file",
+              description: structureValidation.error || "The file does not appear to be a valid PDF.",
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          // Try fallback method directly since PDF.js is hanging
+          console.log("Trying fallback text extraction...");
+          const fallbackResult = await extractTextFallback(file);
+          
+          if (fallbackResult.success) {
+            setTextContent(fallbackResult.text);
+            toast({
+              title: "PDF processed (fallback method)",
+              description: `Extracted ${fallbackResult.text.length} characters using fallback method.`,
+            });
+          } else {
+            toast({
+              title: "PDF processing failed",
+              description: fallbackResult.error || "Failed to extract text from PDF. Please try copying and pasting the text instead.",
+              variant: "destructive",
+            });
+          }
+        } catch (clientError) {
+          console.error("Client-side PDF processing also failed:", clientError);
+          
+          // Provide more specific error messages based on the error type
+          let errorMessage = "Both server and client-side PDF processing failed.";
+          if (error instanceof Error) {
+            if (error.message.includes('Server error: 413')) {
+              errorMessage = "PDF file is too large. Please use a file smaller than 10MB.";
+            } else if (error.message.includes('Server error: 400')) {
+              errorMessage = "Invalid PDF file format. Please check your file and try again.";
+            } else if (error.message.includes('Server error: 500')) {
+              errorMessage = "Server processing error. Please try again or use the text input instead.";
+            }
+          }
+          
           toast({
-            title: "Invalid PDF file",
-            description: structureValidation.error || "The file does not appear to be a valid PDF.",
+            title: "Upload failed",
+            description: errorMessage + " Please try copying and pasting the text content instead.",
             variant: "destructive",
           });
-          return;
         }
-        
-        // Try fallback method directly since PDF.js is hanging
-        console.log("Trying fallback text extraction...");
-        const fallbackResult = await extractTextFallback(file);
-        
-        if (fallbackResult.success) {
-          setTextContent(fallbackResult.text);
-          toast({
-            title: "PDF processed (fallback method)",
-            description: `Extracted ${fallbackResult.text.length} characters using fallback method.`,
-          });
-        } else {
-          toast({
-            title: "PDF processing failed",
-            description: fallbackResult.error || "Failed to extract text from PDF. Please try copying and pasting the text instead.",
-            variant: "destructive",
-          });
+      } finally {
+        setIsUploading(false);
+        // Reset the file input
+        if (event.target) {
+          event.target.value = '';
         }
-      } catch (clientError) {
-        console.error("Client-side PDF processing also failed:", clientError);
-        toast({
-          title: "Upload failed",
-          description: "Both server and client-side PDF processing failed. Please try copying and pasting the text content instead.",
-          variant: "destructive",
-        });
       }
-    } finally {
-      setIsUploading(false);
-      // Reset the file input
-      if (event.target) {
-        event.target.value = '';
-      }
-    }
-  };
+    };
 
 
   const generateQuiz = async () => {
@@ -266,7 +283,7 @@ export default function Index() {
       return;
     }
 
-            // Clean the text content before sending to API
+        // Clean the text content before sending to API
         const cleanedTextContent = currentTextContent
           .replace(/[^\x20-\x7E\n\r\t]/g, '') // Remove non-printable characters
           .replace(/\s+/g, ' ') // Normalize whitespace

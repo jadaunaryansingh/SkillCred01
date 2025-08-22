@@ -12,6 +12,9 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:full": "node start-dev.js",
+    "dev:server": "tsx server/index.ts",
+    "dev:api": "tsx server-dev.ts",
     "build": "npm run build:client && npm run build:functions",
     "build:client": "vite build",
     "build:server": "vite build --config vite.config.server.ts",
