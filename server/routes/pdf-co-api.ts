@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import multer from "multer";
 import axios from "axios";
+import FormData from "form-data";
 import { PDFUploadResponse } from "@shared/api";
 import { PDF_CO_CONFIG, validatePDFCoConfig } from "../config/pdf-co";
 
@@ -36,14 +37,37 @@ export const handlePDFCoProcessing: RequestHandler = async (req, res) => {
     // Validate PDF.co configuration
     validatePDFCoConfig();
 
-    // Try using PDF.co's direct text extraction endpoint
+    // Step 1: Upload the PDF file to PDF.co's file storage
+    const formData = new FormData();
+    formData.append('file', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: 'application/pdf'
+    });
+
+    console.log('Uploading file to PDF.co...');
+    const uploadResponse = await axios.post('https://api.pdf.co/v1/file/upload', formData, {
+      headers: {
+        'x-api-key': PDF_CO_CONFIG.API_KEY,
+        ...formData.getHeaders()
+      },
+      timeout: PDF_CO_CONFIG.TIMEOUT
+    });
+
+    if (!uploadResponse.data || !uploadResponse.data.url) {
+      throw new Error('Failed to upload file to PDF.co: ' + JSON.stringify(uploadResponse.data));
+    }
+
+    const uploadedFileUrl = uploadResponse.data.url;
+    console.log('File uploaded successfully. URL:', uploadedFileUrl);
+
+    // Step 2: Use the uploaded file URL to extract text
     const requestPayload = {
-      file: req.file.buffer.toString('base64'),
+      url: uploadedFileUrl,
       pages: "", // Empty means all pages
       outputFormat: "text"
     };
 
-    // Make request to PDF.co API
+    console.log('Extracting text from uploaded file...');
     const response = await axios.post('https://api.pdf.co/v1/pdf/convert/to/text', requestPayload, {
       headers: {
         'x-api-key': PDF_CO_CONFIG.API_KEY,
