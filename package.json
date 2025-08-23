@@ -18,7 +18,7 @@
     "build": "npm run build:client && npm run build:functions",
     "build:client": "vite build",
     "build:server": "vite build --config vite.config.server.ts",
-    "build:functions": "tsc --project netlify/functions/tsconfig.json",
+    "build:functions": "echo 'Functions are already in JavaScript format'",
     "start": "node dist/server/node-build.mjs",
     "test": "vitest --run",
     "format.fix": "prettier --write .",

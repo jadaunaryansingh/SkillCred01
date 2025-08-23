@@ -1,6 +1,9 @@
 const serverless = require("serverless-http");
 const express = require("express");
 const cors = require("cors");
+const multer = require("multer");
+const axios = require("axios");
+const FormData = require("form-data");
 
 // Create the Express app with different structure
 const app = express();
@@ -33,9 +36,24 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '50mb' })); // Increased limit
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'), false);
+    }
+  },
+});
+
 // Global debugging middleware
 app.use((req, res, next) => {
-  console.log('🚀 NEW FUNCTION V3.1 - MIDDLEWARE DEBUG:');
+  console.log('🚀 NEW FUNCTION V4.0 - MIDDLEWARE DEBUG:');
   console.log('  - Method:', req.method);
   console.log('  - URL:', req.url);
   console.log('  - Content-Type:', req.headers['content-type']);
@@ -48,15 +66,131 @@ app.use((req, res, next) => {
 // Health check with new message
 app.get("/api/ping", (_req, res) => {
   res.json({ 
-    message: "pong - NEW FUNCTION V3.1 WORKING!", 
-    version: "3.1",
+    message: "pong - NEW FUNCTION V4.0 WORKING!", 
+    version: "4.0",
     timestamp: new Date().toISOString()
   });
 });
 
+// PDF.CO API Configuration
+const PDF_CO_CONFIG = {
+  API_KEY: process.env.PDF_CO_API_KEY || "aryansinghjadaun@gmail.com_IR4ErjQrrR9cMHVIfwd5APD4v08CgP1dEYCvfQiZRlKr3SfWNLxwzfnHxsEYrizY",
+  API_URL: "https://api.pdf.co/v1/pdf/convert/to/text",
+  TIMEOUT: 60000, // 60 seconds
+  MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
+};
+
+// PDF.CO API processing endpoint
+app.post("/api/process-pdf-co", upload.single('pdf'), async (req, res) => {
+  console.log('🚀 PDF.CO API PROCESSING START ===');
+  
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: "No PDF file uploaded",
+        message: "Please upload a PDF file"
+      });
+    }
+
+    console.log('Processing PDF file with PDF.co API:', req.file.originalname, 'Size:', req.file.size);
+
+    // Step 1: Upload the PDF file to PDF.co's file storage
+    const formData = new FormData();
+    formData.append('file', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: 'application/pdf'
+    });
+
+    console.log('Uploading file to PDF.co...');
+    const uploadResponse = await axios.post('https://api.pdf.co/v1/file/upload', formData, {
+      headers: {
+        'x-api-key': PDF_CO_CONFIG.API_KEY,
+        ...formData.getHeaders()
+      },
+      timeout: PDF_CO_CONFIG.TIMEOUT
+    });
+
+    if (!uploadResponse.data || !uploadResponse.data.url) {
+      throw new Error('Failed to upload file to PDF.co: ' + JSON.stringify(uploadResponse.data));
+    }
+
+    const uploadedFileUrl = uploadResponse.data.url;
+    console.log('File uploaded successfully. URL:', uploadedFileUrl);
+
+    // Step 2: Use the uploaded file URL to extract text
+    const requestPayload = {
+      url: uploadedFileUrl,
+      pages: "", // Empty means all pages
+      outputFormat: "text"
+    };
+
+    console.log('Extracting text from uploaded file...');
+    const response = await axios.post('https://api.pdf.co/v1/pdf/convert/to/text', requestPayload, {
+      headers: {
+        'x-api-key': PDF_CO_CONFIG.API_KEY,
+        'Content-Type': 'application/json'
+      },
+      timeout: PDF_CO_CONFIG.TIMEOUT
+    });
+
+    console.log('PDF.co API response status:', response.status);
+    console.log('PDF.co API response data:', JSON.stringify(response.data, null, 2));
+
+    // PDF.co API returns a URL to the converted text file, not the text content directly
+    if (response.data && response.data.url && response.data.name && response.data.name.endsWith('.txt')) {
+      console.log('Text file URL received, downloading content...');
+      
+      // Download the text file from the URL
+      const textFileResponse = await axios.get(response.data.url, {
+        timeout: PDF_CO_CONFIG.TIMEOUT
+      });
+      
+      if (textFileResponse.data) {
+        const extractedText = textFileResponse.data;
+        console.log('PDF text extraction successful. Text length:', extractedText.length);
+        console.log('Text preview:', extractedText.substring(0, 200) + '...');
+
+        return res.json({
+          success: true,
+          textContent: extractedText,
+          message: `Successfully extracted text from PDF "${req.file.originalname}" using PDF.co API`
+        });
+      } else {
+        throw new Error('Failed to download text content from PDF.co URL');
+      }
+    } else {
+      console.log('Unexpected response format. Available fields:', Object.keys(response.data || {}));
+      throw new Error('Unexpected response format from PDF.co API. Response: ' + JSON.stringify(response.data));
+    }
+
+  } catch (error) {
+    console.error('Error processing PDF with PDF.co API:', error);
+
+    let errorMessage = "PDF processing error";
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        errorMessage = `PDF.co API Error: ${error.response.status} - ${error.response.data?.message || error.response.statusText}`;
+      } else if (error.request) {
+        errorMessage = "PDF.co API request failed - no response received";
+      } else {
+        errorMessage = `PDF.co API Error: ${error.message}`;
+      }
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: "PDF processing error",
+      message: errorMessage
+    });
+  }
+});
+
 // Quiz generation endpoint - COMPLETELY REWRITTEN
 app.post("/api/generate-quiz", async (req, res) => {
-  console.log('🚀 NEW FUNCTION V3.1 - QUIZ GENERATION START ===');
+  console.log('🚀 NEW FUNCTION V4.0 - QUIZ GENERATION START ===');
   
   // DEBUG: Log the request details
   console.log('🔍 REQUEST DEBUG:');
@@ -83,11 +217,11 @@ app.post("/api/generate-quiz", async (req, res) => {
     console.log('  - textContent trimmed length:', textContent?.trim()?.length || 0);
     
     return res.status(400).json({ 
-      error: "V3.1 VALIDATION ERROR: Text content must be at least 50 characters long",
-      code: "V3_TEXT_TOO_SHORT",
+      error: "V4.0 VALIDATION ERROR: Text content must be at least 50 characters long",
+      code: "V4_TEXT_TOO_SHORT",
       receivedLength: textContent?.length || 0,
       requiredLength: 50,
-      version: "3.1",
+      version: "4.0",
       timestamp: new Date().toISOString()
     });
   }
@@ -119,8 +253,8 @@ app.post("/api/generate-quiz", async (req, res) => {
   
   res.json({
     success: true,
-    message: "V3.1 Quiz generation working!",
-    version: "3.1",
+    message: "V4.0 Quiz generation working!",
+    version: "4.0",
     receivedLength: textContent.length,
     questionCount,
     quiz: {
@@ -248,8 +382,8 @@ function generateQuestionsFromText(text, count) {
 app.post("/api/process-pdf", async (req, res) => {
   res.json({
     success: false,
-    message: "V3.0 - Use client-side PDF processing",
-    version: "3.0"
+    message: "V4.0 - Use client-side PDF processing",
+    version: "4.0"
   });
 });
 
@@ -257,7 +391,7 @@ app.post("/api/process-pdf", async (req, res) => {
 module.exports.handler = serverless(app);
 
 // Force Netlify to recognize this as a completely new function
-console.log('🚀 NEW FUNCTION V3.1 LOADED at:', new Date().toISOString());
-console.log('FUNCTION VERSION: QUIZ-API-v3.1-RAW-BODY-PARSER-FIX');
-console.log('This is a COMPLETELY NEW function with raw body parser to fix JSON corruption');
+console.log('🚀 NEW FUNCTION V4.0 LOADED at:', new Date().toISOString());
+console.log('FUNCTION VERSION: QUIZ-API-v4.0-PDF-CO-INTEGRATION');
+console.log('This function now includes PDF.CO API processing for serverless PDF text extraction');
 console.log('All endpoints have been rewritten with new logic and proper JSON parsing');

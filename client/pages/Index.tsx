@@ -101,7 +101,10 @@ export default function Index() {
         console.log('Current window location:', window.location.href);
       }
 
-      let response = await fetch('http://localhost:3001/api/process-pdf-co', {
+      // Use Netlify function URL when deployed, fallback to localhost for development
+      const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+      
+      let response = await fetch(`${baseUrl}/api/process-pdf-co`, {
         method: 'POST',
         body: formData,
       });
@@ -115,7 +118,7 @@ export default function Index() {
         formData = new FormData();
         formData.append('pdf', file);
         
-        response = await fetch('http://localhost:3001/api/process-pdf', {
+        response = await fetch(`${baseUrl}/api/process-pdf`, {
           method: 'POST',
           body: formData,
         });
@@ -345,7 +348,10 @@ export default function Index() {
         return;
       }
       
-      const response = await fetch("http://localhost:3001/api/generate-quiz", {
+      // Use Netlify function URL when deployed, fallback to localhost for development
+      const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+      
+      const response = await fetch(`${baseUrl}/api/generate-quiz`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
