@@ -3,3 +3,8 @@
 [33m1252267[m Fix dependency conflicts and platform binary issues for Netlify deployment
 [33mbad2a90[m Fix dependency conflicts and platform binary issues for Netlify deployment
 [33m5a6c0d3[m Fix dependency conflicts and platform binary issues for Netlify deployment
+[33m00472e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix PDF.CO integration: Update API key, fix server startup, and correct frontend endpoints
+[33mc48bf8b[m Add Gemini AI direct PDF processing - New endpoint /api/process-pdf-gemini that sends PDFs directly to Gemini - Gemini analyzes PDF and generates quiz questions directly - Falls back to PDF.co API if Gemini fails - This bypasses text extraction issues and provides better quiz generation
+[33m45108ed[m Fix PDF.co API integration - Implement proper two-step process: 1) Upload file to PDF.co storage, 2) Use returned URL for text extraction - This follows PDF.co's required workflow and should resolve the API integration issues
+[33meedea2c[m Try different PDF.co API approach - Changed from file upload to direct base64 file parameter - Using different endpoint structure that might accept file data directly - This is a different approach to resolve the PDF.co API integration issues
+[33me50845f[m Fix PDF.co API integration to use proper file upload method - Changed from base64 data URL to proper file upload to PDF.co - First uploads file to PDF.co, then converts uploaded file to text - This should resolve the 'Invalid input url' error from PDF.co API

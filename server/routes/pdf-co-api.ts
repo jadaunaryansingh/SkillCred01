@@ -76,10 +76,27 @@ export const handlePDFCoProcessing: RequestHandler = async (req, res) => {
       timeout: PDF_CO_CONFIG.TIMEOUT
     });
 
+    console.log('PDF.co API response status:', response.status);
+    console.log('PDF.co API response data:', JSON.stringify(response.data, null, 2));
+
+    // Check for different possible response formats
+    let extractedText = null;
+    
     if (response.data && response.data.text) {
-      const extractedText = response.data.text;
-      
+      extractedText = response.data.text;
+    } else if (response.data && response.data.content) {
+      extractedText = response.data.content;
+    } else if (response.data && response.data.result) {
+      extractedText = response.data.result;
+    } else if (response.data && typeof response.data === 'string') {
+      extractedText = response.data;
+    } else if (response.data && response.data.data && response.data.data.text) {
+      extractedText = response.data.data.text;
+    }
+
+    if (extractedText) {
       console.log('PDF text extraction successful. Text length:', extractedText.length);
+      console.log('Text preview:', extractedText.substring(0, 200) + '...');
 
       return res.json({
         success: true,
@@ -87,7 +104,8 @@ export const handlePDFCoProcessing: RequestHandler = async (req, res) => {
         message: `Successfully extracted text from PDF "${req.file.originalname}"`
       } as PDFUploadResponse);
     } else {
-      throw new Error('No text content received from PDF.co API');
+      console.log('No text content found in response. Available fields:', Object.keys(response.data || {}));
+      throw new Error('No text content received from PDF.co API. Response: ' + JSON.stringify(response.data));
     }
 
   } catch (error) {
