@@ -79,33 +79,31 @@ export const handlePDFCoProcessing: RequestHandler = async (req, res) => {
     console.log('PDF.co API response status:', response.status);
     console.log('PDF.co API response data:', JSON.stringify(response.data, null, 2));
 
-    // Check for different possible response formats
-    let extractedText = null;
-    
-    if (response.data && response.data.text) {
-      extractedText = response.data.text;
-    } else if (response.data && response.data.content) {
-      extractedText = response.data.content;
-    } else if (response.data && response.data.result) {
-      extractedText = response.data.result;
-    } else if (response.data && typeof response.data === 'string') {
-      extractedText = response.data;
-    } else if (response.data && response.data.data && response.data.data.text) {
-      extractedText = response.data.data.text;
-    }
+    // PDF.co API returns a URL to the converted text file, not the text content directly
+    if (response.data && response.data.url && response.data.name && response.data.name.endsWith('.txt')) {
+      console.log('Text file URL received, downloading content...');
+      
+      // Download the text file from the URL
+      const textFileResponse = await axios.get(response.data.url, {
+        timeout: PDF_CO_CONFIG.TIMEOUT
+      });
+      
+      if (textFileResponse.data) {
+        const extractedText = textFileResponse.data;
+        console.log('PDF text extraction successful. Text length:', extractedText.length);
+        console.log('Text preview:', extractedText.substring(0, 200) + '...');
 
-    if (extractedText) {
-      console.log('PDF text extraction successful. Text length:', extractedText.length);
-      console.log('Text preview:', extractedText.substring(0, 200) + '...');
-
-      return res.json({
-        success: true,
-        textContent: extractedText,
-        message: `Successfully extracted text from PDF "${req.file.originalname}"`
-      } as PDFUploadResponse);
+        return res.json({
+          success: true,
+          textContent: extractedText,
+          message: `Successfully extracted text from PDF "${req.file.originalname}" using PDF.co API`
+        } as PDFUploadResponse);
+      } else {
+        throw new Error('Failed to download text content from PDF.co URL');
+      }
     } else {
-      console.log('No text content found in response. Available fields:', Object.keys(response.data || {}));
-      throw new Error('No text content received from PDF.co API. Response: ' + JSON.stringify(response.data));
+      console.log('Unexpected response format. Available fields:', Object.keys(response.data || {}));
+      throw new Error('Unexpected response format from PDF.co API. Response: ' + JSON.stringify(response.data));
     }
 
   } catch (error) {
