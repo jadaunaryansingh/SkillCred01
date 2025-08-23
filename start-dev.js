@@ -2,7 +2,7 @@
 // This script starts both the Vite client server and Express server
 
 import { spawn } from 'child_process';
-import { createServer } from './server/index.js';
+import { createServer } from './server/index.ts';
 import express from 'express';
 
 console.log('🚀 Starting Quiz Maker development servers...\n');

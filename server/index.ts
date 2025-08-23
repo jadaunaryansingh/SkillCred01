@@ -36,3 +36,19 @@ export function createServer() {
 
   return app;
 }
+
+// Start the server if this file is run directly
+if (process.argv[1] && process.argv[1].endsWith('index.ts')) {
+  const app = createServer();
+  const PORT = process.env.PORT || 3001;
+  
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📚 Available endpoints:`);
+    console.log(`   GET  /api/ping - Health check`);
+    console.log(`   GET  /api/demo - Demo endpoint`);
+    console.log(`   POST /api/generate-quiz - Quiz generation`);
+    console.log(`   POST /api/process-pdf - PDF processing`);
+    console.log(`   POST /api/process-pdf-co - PDF.co API processing`);
+  });
+}
